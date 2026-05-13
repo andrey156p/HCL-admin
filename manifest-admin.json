@@ -1,0 +1,23 @@
+{
+  "id": "/HCL/admin/",
+  "name": "HCL Панель Управления",
+  "short_name": "HCL Админ",
+  "description": "Панель управления и статистика",
+  "start_url": "/HCL/admin",
+  "scope": "/HCL/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#1f2937",
+  "icons": [
+    {
+      "src": "admin-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "admin-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
