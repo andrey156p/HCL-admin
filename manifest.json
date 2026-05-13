@@ -1,10 +1,9 @@
 {
-  "id": "/HCL/admin/",
   "name": "HCL Панель Управления",
   "short_name": "HCL Админ",
   "description": "Панель управления и статистика",
-  "start_url": "/HCL/admin",
-  "scope": "/HCL/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#1f2937",
