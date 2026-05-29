@@ -13,14 +13,30 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; background-color: white;}
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Стили для штампа "В работе" */
         .in-progress-stamp { border: 3px solid #f97316; color: #f97316; transform: rotate(-5deg); font-family: 'Impact', sans-serif; }
+
+        /* Кастомный стиль для точек под датами в календаре Flatpickr */
+        .flatpickr-day.has-tasks-dot::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background-color: #4f46e5;
+            border-radius: 50%;
+        }
 
         @media screen { .print-only { display: none !important; } }
 
@@ -44,10 +60,10 @@
             .defect-comment { font-size: 15px; color: #374151; }
             .signature-box { border-top: 2px dashed #000; margin-top: auto; padding-top: 5px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
 
-            body.manager-report-mode #managerTable { display: table !important; width: 100%; border-collapse: collapse; margin-top: 10mm; }
-            body.manager-report-mode #printTitleManager { display: block !important; font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-top: 10mm; margin-bottom: 10mm; }
-            body.manager-report-mode th, body.manager-report-mode td { border: 1px solid #000; padding: 8px; text-align: right; }
-            body.manager-report-mode th { background: #f3f4f6; font-size: 15px; }
+            body.manager-report-mode #managerTable { display: table !important; width: 100%; border-collapse: collapse; margin-top: 5mm; }
+            body.manager-report-mode #printTitleManager { display: block !important; font-size: 22px; font-weight: bold; text-align: center; text-decoration: underline; margin-top: 5mm; margin-bottom: 5mm; }
+            body.manager-report-mode th, body.manager-report-mode td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 13px; }
+            body.manager-report-mode th { background: #f3f4f6; font-weight: bold; }
         }
     </style>
 </head>
@@ -67,22 +83,24 @@
         <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600">מעדכן נתונים...</p></div>
     </div>
 
+    <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 no-print opacity-0 invisible">
+        <i class="fas fa-arrow-up text-lg"></i>
+    </button>
+
     <div id="mainApp" class="hidden max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-full">
         
-        <div id="unprintedAlertBanner" class="hidden bg-amber-50 border-r-4 border-amber-500 p-4 rounded-xl mb-6 flex justify-between items-center shadow-sm no-print">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-exclamation-circle text-amber-600 text-xl"></i>
-                <p class="font-bold text-amber-900" id="unprintedAlertText"></p>
-            </div>
+        <div id="unprintedAlertBanner" class="hidden bg-amber-50 border-r-4 border-amber-500 p-5 rounded-2xl mb-6 shadow-sm no-print">
+            <div class="flex items-start gap-3 w-full" id="unprintedAlertText">
+                </div>
         </div>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 no-print">
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4">
                 <h1 class="text-3xl font-black text-gray-800 mb-4 md:mb-0">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
                 <div class="flex gap-2 flex-wrap justify-center">
+                    <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
                     <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
                     <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-500 shadow"><i class="fas fa-print ml-2"></i>הדפסת כרטיסיות</button>
-                    <button onclick="printManagerReport()" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-500"><i class="fas fa-table ml-2"></i>דוח מנהל</button>
                     <button onclick="loadTasks()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-200"><i class="fas fa-sync-alt"></i></button>
                 </div>
             </div>
@@ -96,7 +114,7 @@
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm font-bold text-gray-500 mb-1">מתאריך</label>
-                    <input type="date" id="filterDate" onchange="renderTasks()" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none">
+                    <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תאריך">
                 </div>
                 <div class="flex items-end">
                     <button onclick="resetFilters()" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl font-bold">נקה סינון</button>
@@ -114,9 +132,18 @@
         </div>
 
         <div class="print-only" id="printTitleManager"></div>
+        
         <table id="managerTable" class="print-only">
             <thead>
-                <tr><th>תאריך</th><th>מחלקה</th><th>חדר</th><th>ליקוי</th><th>פעולה</th><th>אישור</th></tr>
+                <tr>
+                    <th>תאריך ושעה</th>
+                    <th>שם הבודק</th>
+                    <th>מחלקה</th>
+                    <th>חדר</th>
+                    <th>פריט נבדק</th>
+                    <th>הערות</th>
+                    <th>סטטוס</th>
+                </tr>
             </thead>
             <tbody id="managerTableBody"></tbody>
         </table>
@@ -129,10 +156,47 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         let allTasks = [];
         let currentTab = "חשמל";
+        let fpInstance = null;
+
+        // Отслеживание прокрутки для кнопки "Наверх"
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('backToTopBtn');
+            if (window.scrollY > 300) {
+                btn.classList.remove('opacity-0', 'invisible');
+            } else {
+                btn.classList.add('opacity-0', 'invisible');
+            }
+        });
 
         document.addEventListener("DOMContentLoaded", () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filterDate').value = today;
+            // Инициализация календаря Flatpickr с поддержкой отметки выполненных проверок
+            fpInstance = flatpickr("#filterDate", {
+                dateFormat: "Y-m-d",
+                defaultDate: new Date(),
+                allowInput: false,
+                onChange: function() {
+                    renderTasks();
+                },
+                onDayCreate: function(dObj, dStr, fp, dayElem) {
+                    if (!allTasks || allTasks.length === 0) return;
+                    
+                    // Переводим дату ячейки в формат YYYY-MM-DD для сверки
+                    const cellDate = dayElem.dateObj;
+                    const offsetObj = new Date(cellDate.getTime() - cellDate.getTimezoneOffset() * 60000);
+                    const dateKey = offsetObj.toISOString().split('T')[0];
+
+                    // Если в этот день есть задачи в системе — вешаем точку
+                    const hasTasksOnDay = allTasks.some(t => {
+                        const p = t.dateStr.split(" ")[0].split("/");
+                        const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                        return taskIso === dateKey;
+                    });
+
+                    if (hasTasksOnDay) {
+                        dayElem.classList.add("has-tasks-dot");
+                    }
+                }
+            });
         });
 
         function checkPin() {
@@ -164,6 +228,9 @@
                 const data = await res.json();
                 allTasks = data.tasks || [];
                 
+                // Перерисовываем календарь, чтобы наложить точки дней
+                if(fpInstance) fpInstance.redraw();
+                
                 renderTasks();
             } catch(e) { console.error("Ошибка загрузки:", e); }
             document.getElementById('loader').classList.add('hidden');
@@ -179,11 +246,10 @@
 
         function resetFilters() { 
             document.getElementById('filterDept').value="ALL"; 
-            document.getElementById('filterDate').value=""; 
+            if(fpInstance) fpInstance.setDate(new Date());
             renderTasks(); 
         }
 
-        // НОВАЯ ФУНКЦИЯ: Сброс штампа "В работе"
         function resetPrintStamp(tKey) {
             if(!confirm("לבטל את סטטוס 'בעבודה' למשימה זו?")) return;
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
@@ -192,23 +258,44 @@
             renderTasks();
         }
 
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            if (checkboxes.length === 0) return;
+            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+            checkboxes.forEach(cb => cb.checked = anyUnchecked);
+            updateSelectAllBtn();
+        }
+
+        function updateSelectAllBtn() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            const btn = document.getElementById('selectAllBtn');
+            if(!btn || checkboxes.length === 0) return;
+            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+            if (anyUnchecked) {
+                btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`;
+            } else {
+                btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`;
+            }
+        }
+
         function renderTasks() {
             const screen = document.getElementById('screenTasksContainer');
-            const print = document.getElementById('printTasksContainer');
             const tbody = document.getElementById('managerTableBody');
-            screen.innerHTML = ''; print.innerHTML = ''; tbody.innerHTML = '';
+            screen.innerHTML = ''; tbody.innerHTML = '';
             
             const fDept = document.getElementById('filterDept').value;
             const fDate = document.getElementById('filterDate').value;
 
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
+            let now = new Date();
 
+            // Динамический фильтр отделений
             let tasksForDeptFilter = allTasks.filter(t => t.sheet === currentTab);
             if(fDate) {
-                const selD = new Date(fDate);
                 tasksForDeptFilter = tasksForDeptFilter.filter(t => {
                     const p = t.dateStr.split(" ")[0].split("/");
-                    return new Date(`${p[2]}-${p[1]}-${p[0]}`).toDateString() === selD.toDateString();
+                    const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                    return taskIso === fDate;
                 });
             }
             const activeDepts = [...new Set(tasksForDeptFilter.map(t => t.dept))].filter(Boolean);
@@ -219,20 +306,55 @@
             activeDepts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
             if (activeDepts.includes(previousValue)) { sel.value = previousValue; }
 
+            // Фильтрация текущего вывода задач
             let filtered = allTasks.filter(t => t.sheet === currentTab);
             if(fDept !== "ALL") filtered = filtered.filter(t => t.dept === fDept);
             if(fDate) {
-                const selD = new Date(fDate);
                 filtered = filtered.filter(t => {
                     const p = t.dateStr.split(" ")[0].split("/");
-                    return new Date(`${p[2]}-${p[1]}-${p[0]}`).toDateString() === selD.toDateString();
+                    const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                    return taskIso === fDate;
                 });
             }
             
-            let unprintedCount = filtered.filter(t => !printedKeys.includes(makeTaskKey(t))).length;
+            // СБОР АНАЛИТИКИ ДЛЯ ОБНОВЛЕННОГО ВЕРХНЕГО БАННЕРА
+            let unprintedGroups = {}; // Для фиксации "Отделение (Дата)"
+            let overdueCounter = 0;   // Счетчик > 48 часов
+
+            allTasks.forEach(t => {
+                const tKey = makeTaskKey(t);
+                const isPrinted = printedKeys.includes(tKey);
+                
+                // Вычисление возраста задачи
+                const p = t.dateStr.split(" ")[0].split("/");
+                const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
+                const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
+                const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60);
+
+                if (!isPrinted) {
+                    const dateOnly = t.dateStr.split(" ")[0];
+                    unprintedGroups[`מחלקה ${t.dept} (${dateOnly})`] = true;
+                }
+
+                if (diffHours >= 48) {
+                    overdueCounter++;
+                }
+            });
+
+            const unprintedList = Object.keys(unprintedGroups);
             const banner = document.getElementById('unprintedAlertBanner');
-            if (unprintedCount > 0 && fDate) {
-                document.getElementById('unprintedAlertText').innerText = `⚠️ שים לב: ישנן ${unprintedCount} תקלות שלא הודפסו ולא יצאו לעבודה ליום זה!`;
+            const bannerTextZone = document.getElementById('unprintedAlertText');
+
+            if (unprintedList.length > 0 || overdueCounter > 0) {
+                let bannerHtml = `<div class="flex flex-col gap-2 w-full text-right text-sm">`;
+                if (unprintedList.length > 0) {
+                    bannerHtml += `<p class="text-amber-900 font-medium"><i class="fas fa-print ml-1 text-amber-600"></i> <strong>מחלקות ותאריכים שלא יצאו לעבודה (לא הודפסו):</strong> ${unprintedList.join(', ')}</p>`;
+                }
+                if (overdueCounter > 0) {
+                    bannerHtml += `<p class="text-red-700 font-bold"><i class="fas fa-clock ml-1 text-red-600"></i> <strong>תקוע במערכת:</strong> ישנן ${overdueCounter} תקלות פתוחות מעל 48 שעות!</p>`;
+                }
+                bannerHtml += `</div>`;
+                bannerTextZone.innerHTML = bannerHtml;
                 banner.classList.remove('hidden');
             } else {
                 banner.classList.add('hidden');
@@ -240,14 +362,13 @@
 
             if(filtered.length === 0) { 
                 screen.innerHTML = '<p class="text-center p-10 text-gray-400 font-bold">אין משימות (Нет заданий)</p>'; 
+                updateSelectAllBtn();
                 return; 
             }
 
-            let groups = {};
-            filtered.forEach((task, idx) => {
+            filtered.forEach((task) => {
                 const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                 const img = fixImageUrl(task.photo);
-                const dDate = task.dateStr.split(" ")[0];
                 const tKey = makeTaskKey(task);
                 const isPrinted = printedKeys.includes(tKey);
                 
@@ -255,12 +376,14 @@
                 const safeDateStr = escapeStr(task.dateStr);
                 const safeRoom = escapeStr(task.room);
                 const safeDefect = escapeStr(task.defect);
+                
+                const realIdx = allTasks.indexOf(task);
 
                 screen.innerHTML += `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${idx}">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
-                        <input type="checkbox" class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" 
-                               data-index="${idx}" data-key="${tKey}" data-sheet="${safeSheet}" data-date="${safeDateStr}" data-room="${safeRoom}" data-defect="${safeDefect}">
+                        <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" 
+                               data-index="${realIdx}" data-key="${tKey}" data-sheet="${safeSheet}" data-date="${safeDateStr}" data-room="${safeRoom}" data-defect="${safeDefect}" onchange="updateSelectAllBtn()">
                     </div>
                     <img src="${img}" class="w-24 h-24 object-cover rounded-xl border" onerror="this.src='https://placehold.co/100x100?text=No+Photo'">
                     <div class="flex-grow pr-10 md:pr-0">
@@ -278,47 +401,35 @@
                         <p class="font-bold mt-1">${task.defect}</p>
                         <p class="text-gray-500 text-sm">${task.comment || ""}</p>
                     </div>
-                    <button id="btn-${idx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${idx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-3 rounded-xl font-bold">בוצע</button>
+                    <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-3 rounded-xl font-bold">בוצע</button>
                 </div>`;
 
-                tbody.innerHTML += `<tr><td>${dDate}</td><td>${task.dept}</td><td>${task.room}</td><td>${task.defect}</td><td>${actT}</td><td></td></tr>`;
-
-                let key = `${task.dept}|${dDate}`;
-                if(!groups[key]) groups[key] = [];
-                groups[key].push({...task, actT, img});
+                // ИЗМЕНЕНО: Наполнение таблицы отчета строго по новым заголовкам руководства
+                tbody.innerHTML += `<tr>
+                    <td>${task.dateStr}</td>
+                    <td>${task.inspector || "אנדרי"}</td>
+                    <td>${task.dept}</td>
+                    <td>${task.room}</td>
+                    <td>${task.defect}</td>
+                    <td>${task.comment || ""}</td>
+                    <td>פתוח</td>
+                </tr>`;
             });
 
-            for(let key in groups) {
-                let g = groups[key];
-                for(let i=0; i<g.length; i+=4) {
-                    let chunk = g.slice(i, i+4);
-                    let page = `<div class="print-page"><div class="print-page-header">צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך: ${g[0].dateStr.split(" ")[0]}</div><div class="print-cards-grid">`;
-                    chunk.forEach(t => {
-                        page += `<div class="print-card">
-                            <div class="print-card-top"><span class="font-black text-xl">חדר: ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
-                            <div class="print-card-body">
-                                <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
-                                <div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div>
-                            </div>
-                            <div class="signature-box"><span>שם: _________</span><span>תאריך: _________</span><span>חתימה: _________</span></div>
-                        </div>`;
-                    });
-                    print.innerHTML += page + `</div></div>`;
-                }
-            }
+            updateSelectAllBtn();
         }
 
-        async function closeTask(sh, dt, rm, df, idx, tKey) {
+        async function closeTask(sh, dt, rm, df, realIdx, tKey) {
             if(!confirm("לסגור את המשימה?")) return;
-            const b = document.getElementById(`btn-${idx}`);
+            const b = document.getElementById(`btn-${realIdx}`);
             b.innerHTML = "..."; b.disabled = true;
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: sh, date: dt, room: rm, defect: df }) });
                 const out = await res.json();
                 if(out.status === "success") {
-                    document.getElementById(`task-card-${idx}`).style.opacity="0.3";
+                    document.getElementById(`task-card-${realIdx}`).style.opacity="0.3";
                     b.innerHTML = "סגור ✅";
-                    const cb = document.querySelector(`.task-checkbox[data-index="${idx}"]`);
+                    const cb = document.querySelector(`.task-checkbox[data-index="${realIdx}"]`);
                     if(cb) { cb.checked = false; cb.disabled = true; }
                     
                     let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
@@ -326,6 +437,7 @@
                     localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
 
                     allTasks = allTasks.filter(t => !(t.sheet === sh && t.dateStr === dt && t.room == rm && t.defect === df));
+                    if(fpInstance) fpInstance.redraw();
                     setTimeout(renderTasks, 500);
                 }
             } catch(e) { b.disabled = false; b.innerHTML = "בוצע"; }
@@ -356,6 +468,7 @@
                 } catch(e) { console.error(e); }
             }
             localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
+            if(fpInstance) fpInstance.redraw();
             document.getElementById('loader').classList.add('hidden');
             loadTasks();
         }
@@ -365,11 +478,51 @@
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
 
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
+            let tasksToPrint = [];
+
             checkboxes.forEach(cb => {
-                const tKey = cb.dataset.key;
-                if (!printedKeys.includes(tKey)) { printedKeys.push(tKey); }
+                const realIdx = parseInt(cb.dataset.index);
+                const task = allTasks[realIdx];
+                if (task) {
+                    const tKey = cb.dataset.key;
+                    if (!printedKeys.includes(tKey)) { printedKeys.push(tKey); }
+                    
+                    const actT = task.actionType == 1 ? "החלפה" : "תיקון";
+                    const img = fixImageUrl(task.photo);
+                    const dDate = task.dateStr.split(" ")[0];
+                    tasksToPrint.push({...task, actT, img, dDate});
+                }
             });
             localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
+
+            let groups = {};
+            tasksToPrint.forEach(task => {
+                let key = `${task.dept}|${task.dDate}`;
+                if(!groups[key]) groups[key] = [];
+                groups[key].push(task);
+            });
+
+            const printContainer = document.getElementById('printTasksContainer');
+            printContainer.innerHTML = '';
+
+            for(let key in groups) {
+                let g = groups[key];
+                for(let i=0; i<g.length; i+=4) {
+                    let chunk = g.slice(i, i+4);
+                    let page = `<div class="print-page"><div class="print-page-header">צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך: ${g[0].dDate}</div><div class="print-cards-grid">`;
+                    chunk.forEach(t => {
+                        page += `<div class="print-card">
+                            <div class="print-card-top"><span class="font-black text-xl">חדר: ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
+                            <div class="print-card-body">
+                                <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
+                                <div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div>
+                            </div>
+                            <div class="signature-box"><span>שם: _________</span><span>תאריך: _________</span><span>חתימה: _________</span></div>
+                        </div>`;
+                    });
+                    printContainer.innerHTML += page + `</div></div>`;
+                }
+            }
 
             document.body.classList.remove('manager-report-mode'); 
             document.body.classList.add('task-print-mode'); 
