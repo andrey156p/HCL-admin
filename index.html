@@ -30,32 +30,19 @@
             width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
-        /* Жесткое сокрытие элементов печати на экране */
-        @media screen { 
-            #managerTable, #printTitleManager, #printTasksContainer { display: none !important; } 
-        }
-
-        /* ИСПРАВЛЕНО: Безупречная логика изоляции для принтера */
+        /* Жесткие стили для печати: мы управляем видимостью через JS, а здесь только дизайн */
         @media print {
-            @page { size: A4 portrait; margin: 5mm; }
-            body { background: white; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
-            .no-print { display: none !important; }
+            @page { size: A4 portrait; margin: 10mm; }
+            body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
             
-            /* Скрываем всё лишнее по умолчанию */
-            #managerTable, #printTitleManager, #printTasksContainer { display: none !important; }
+            /* Стили для таблицы руководителя */
+            #managerTable { width: 100%; border-collapse: collapse; margin-top: 10mm; direction: rtl; }
+            #managerTable th, #managerTable td { border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; color: #000; }
+            #managerTable th { background-color: #e5e7eb !important; font-weight: bold; }
+            #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; }
 
-            /* Режим печати карточек */
-            body.task-print-mode #printTasksContainer { display: block !important; }
-
-            /* Режим отчета руководителя */
-            body.manager-report-mode #printTitleManager { display: block !important; font-size: 22px; font-weight: bold; text-align: center; text-decoration: underline; margin-top: 5mm; margin-bottom: 5mm; }
-            body.manager-report-mode #managerTable { display: table !important; width: 100%; border-collapse: collapse; margin-top: 5mm; }
-            
-            #managerTable th, #managerTable td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 13px; }
-            #managerTable th { background-color: #f3f4f6 !important; font-weight: bold; }
-
-            /* Карточки печати */
-            .print-page { width: 100%; height: 282mm; page-break-after: always; box-sizing: border-box; padding: 5mm; display: flex; flex-direction: column; }
+            /* Стили для карточек */
+            .print-page { width: 100%; height: 275mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
             .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 10px; height: 30px; }
             .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; height: calc(100% - 40px); }
             .print-card { width: 48.8%; height: 48.8%; border: 2px solid #000; border-radius: 10px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
@@ -71,7 +58,7 @@
 </head>
 <body class="text-gray-800">
 
-    <div id="loginScreen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50 no-print">
+    <div id="loginScreen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
             <i class="fas fa-lock text-indigo-600 text-5xl mb-4"></i>
             <h2 class="text-2xl font-black mb-6">כניסת מנהל</h2>
@@ -81,59 +68,74 @@
         </div>
     </div>
 
-    <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center no-print">
+    <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center">
         <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600">מעדכן נתונים...</p></div>
     </div>
 
-    <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 no-print opacity-0 invisible">
+    <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 opacity-0 invisible">
         <i class="fas fa-arrow-up text-lg"></i>
     </button>
 
     <div id="mainApp" class="hidden max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-full">
         
-        <div id="unprintedAlertBanner" class="hidden mb-6 no-print">
-            <div id="unprintedAlertText" class="w-full"></div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 no-print">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4">
-                <h1 class="text-3xl font-black text-gray-800 mb-4 md:mb-0">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
-                <div class="flex gap-2 flex-wrap justify-center">
-                    <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
-                    <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
-                    <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-500 shadow"><i class="fas fa-print ml-2"></i>הדפסת כרטיסיות</button>
-                    <button onclick="loadTasks()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-200"><i class="fas fa-sync-alt"></i></button>
+        <div id="noPrintUI">
+            
+            <div id="unprintedAlertBanner" class="hidden mb-6">
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <button onclick="toggleBannerDetails()" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200 outline-none">
+                        <div class="flex items-center gap-3 font-bold text-gray-800" id="bannerSummaryText">
+                            </div>
+                        <i id="bannerChevron" class="fas fa-chevron-down text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div id="bannerDetails" class="hidden p-4 bg-white text-sm">
+                        <div id="unprintedAlertText" class="w-full"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-bold text-gray-500 mb-1">מחלקה</label>
-                    <select id="filterDept" onchange="renderTasks()" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none">
-                        <option value="ALL">כל המחלקות</option>
-                    </select>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4">
+                    <h1 class="text-3xl font-black text-gray-800 mb-4 md:mb-0">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
+                    <div class="flex gap-2 flex-wrap justify-center">
+                        <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
+                        <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
+                        <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-500 shadow"><i class="fas fa-print ml-2"></i>הדפסת כרטיסיות</button>
+                        <button onclick="printManagerReport()" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-table ml-2"></i>דוח מנהל</button>
+                        <button onclick="loadTasks()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-200"><i class="fas fa-sync-alt"></i></button>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <label class="block text-sm font-bold text-gray-500 mb-1">מתאריך</label>
-                    <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תאריך">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="resetFilters()" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl font-bold">נקה סינון</button>
+
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-gray-500 mb-1">מחלקה</label>
+                        <select id="filterDept" onchange="renderTasks()" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none">
+                            <option value="ALL">כל המחלקות</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-gray-500 mb-1">מתאריך</label>
+                        <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תאריך">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="resetFilters()" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl font-bold">נקה סינון</button>
+                    </div>
                 </div>
             </div>
+
+            <div class="flex bg-white rounded-2xl shadow-sm mb-6 overflow-hidden flex-wrap md:flex-nowrap border border-gray-200">
+                <button onclick="switchTab('חשמל')" id="tab-חשמל" class="tab-btn active flex-1 py-4 px-2 font-bold text-gray-500">חשמל</button>
+                <button onclick="switchTab('מיזוג_אוויר')" id="tab-מיזוג_אוויר" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיזוג</button>
+                <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוי</button>
+                <button onclick="switchTab('מיטות')" id="tab-מיטות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיטות</button>
+                <button onclick="switchTab('בטיחות')" id="tab-בטיחות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בטיחות</button>
+                <button onclick="switchTab('ליקויים')" id="tab-ליקויים" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">כללי</button>
+            </div>
+
+            <div id="screenTasksContainer" class="space-y-4"></div>
         </div>
 
-        <div class="flex bg-white rounded-2xl shadow-sm mb-6 overflow-hidden no-print flex-wrap md:flex-nowrap">
-            <button onclick="switchTab('חשמל')" id="tab-חשמל" class="tab-btn active flex-1 py-4 px-2 font-bold text-gray-500">חשמל</button>
-            <button onclick="switchTab('מיזוג_אוויר')" id="tab-מיזוג_אוויר" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיזוג</button>
-            <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוי</button>
-            <button onclick="switchTab('מיטות')" id="tab-מיטות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיטות</button>
-            <button onclick="switchTab('בטיחות')" id="tab-בטיחות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בטיחות</button>
-            <button onclick="switchTab('ליקויים')" id="tab-ליקויים" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">כללי</button>
-        </div>
-
-        <div class="print-only" id="printTitleManager"></div>
-        <table id="managerTable" class="print-only">
+        <div id="printTitleManager" style="display: none;"></div>
+        <table id="managerTable" style="display: none;">
             <thead>
                 <tr>
                     <th>תאריך ושעה</th>
@@ -148,8 +150,8 @@
             <tbody id="managerTableBody"></tbody>
         </table>
 
-        <div id="screenTasksContainer" class="space-y-4 no-print"></div>
-        <div id="printTasksContainer" class="print-only"></div>
+        <div id="printTasksContainer" style="display: none;"></div>
+
     </div>
 
     <script>
@@ -160,11 +162,8 @@
 
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('backToTopBtn');
-            if (window.scrollY > 300) {
-                btn.classList.remove('opacity-0', 'invisible');
-            } else {
-                btn.classList.add('opacity-0', 'invisible');
-            }
+            if (window.scrollY > 300) { btn.classList.remove('opacity-0', 'invisible'); } 
+            else { btn.classList.add('opacity-0', 'invisible'); }
         });
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -208,6 +207,18 @@
 
         function makeTaskKey(task) {
             return `${task.sheet}_${task.dateStr}_${task.room}_${task.defect}`.replace(/\s+/g, '_');
+        }
+
+        function toggleBannerDetails() {
+            const details = document.getElementById('bannerDetails');
+            const chevron = document.getElementById('bannerChevron');
+            if(details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
         }
 
         async function loadTasks() {
@@ -275,7 +286,8 @@
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
             let now = new Date();
 
-            let tasksForDeptFilter = allTasks.filter(t => t.sheet === currentTab);
+            // ИСПРАВЛЕНО: Список отделений теперь формируется по ВСЕМ задачам выбранной даты, без фильтра по текущей вкладке
+            let tasksForDeptFilter = allTasks; 
             if(fDate) {
                 tasksForDeptFilter = tasksForDeptFilter.filter(t => {
                     const p = t.dateStr.split(" ")[0].split("/");
@@ -291,6 +303,7 @@
             activeDepts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
             if (activeDepts.includes(previousValue)) { sel.value = previousValue; }
 
+            // Фильтрация текущей вкладки для вывода
             let filtered = allTasks.filter(t => t.sheet === currentTab);
             if(fDept !== "ALL") filtered = filtered.filter(t => t.dept === fDept);
             if(fDate) {
@@ -301,9 +314,11 @@
                 });
             }
             
-            // ИСПРАВЛЕНО: Сбор данных для умного баннера
+            // Сбор данных для умного сворачиваемого баннера
             let unprintedList = [];
             let overdueList = [];
+            let unprintedTaskCount = 0;
+            let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
                 const tKey = makeTaskKey(t);
@@ -316,27 +331,38 @@
                 const dateOnly = t.dateStr.split(" ")[0];
 
                 if (!isPrinted) {
+                    unprintedTaskCount++;
                     let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
                     if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr);
                 }
 
                 if (diffHours >= 48) {
+                    overdueTaskCount++;
                     let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
                     if(!overdueList.includes(itemStr)) overdueList.push(itemStr);
                 }
             });
 
             const banner = document.getElementById('unprintedAlertBanner');
+            const bannerSummary = document.getElementById('bannerSummaryText');
             const bannerTextZone = document.getElementById('unprintedAlertText');
 
-            if (unprintedList.length > 0 || overdueList.length > 0) {
-                let bannerHtml = `<div class="flex flex-col gap-3 w-full text-right text-sm">`;
+            if (unprintedTaskCount > 0 || overdueTaskCount > 0) {
+                // Создаем короткую сводку для шапки
+                let summaryHTML = `<i class="fas fa-exclamation-triangle text-amber-500 text-lg"></i> <span class="hidden md:inline">שים לב:</span> `;
+                if(unprintedTaskCount > 0) summaryHTML += `<span class="text-amber-700">${unprintedTaskCount} תקלות להדפסה</span>`;
+                if(unprintedTaskCount > 0 && overdueTaskCount > 0) summaryHTML += `<span class="mx-2 text-gray-300">|</span>`;
+                if(overdueTaskCount > 0) summaryHTML += `<span class="text-red-600">${overdueTaskCount} חריגות מעל 48 שעות!</span>`;
+                bannerSummary.innerHTML = summaryHTML;
+
+                // Создаем подробные списки с разделителями
+                let bannerHtml = `<div class="flex flex-col gap-4 text-right text-sm">`;
                 
                 if (unprintedList.length > 0) {
                     bannerHtml += `
-                    <div class="bg-amber-100/70 p-4 rounded-xl border border-amber-300 shadow-sm">
-                        <p class="text-amber-900 font-black mb-2 text-base"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p>
-                        <ul class="list-disc list-inside text-amber-800 font-medium space-y-1 pr-2">
+                    <div>
+                        <p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">
                             ${unprintedList.map(item => `<li>${item}</li>`).join('')}
                         </ul>
                     </div>`;
@@ -344,9 +370,9 @@
                 
                 if (overdueList.length > 0) {
                     bannerHtml += `
-                    <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
-                        <p class="text-red-800 font-black mb-2 text-base"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p>
-                        <ul class="list-disc list-inside text-red-700 font-medium space-y-1 pr-2">
+                    <div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}">
+                        <p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">
                             ${overdueList.map(item => `<li>${item}</li>`).join('')}
                         </ul>
                     </div>`;
@@ -391,7 +417,7 @@
                             ${isPrinted ? `
                                 <div class="flex items-center gap-2">
                                     <span class="in-progress-stamp text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider">בעבודה / В работе</span>
-                                    <button onclick="resetPrintStamp('${tKey}')" class="text-gray-400 hover:text-red-500 transition-colors no-print p-1" title="בטל סטטוס / Сбросить">
+                                    <button onclick="resetPrintStamp('${tKey}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить">
                                         <i class="fas fa-undo"></i>
                                     </button>
                                 </div>
@@ -403,6 +429,7 @@
                     <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-3 rounded-xl font-bold">בוצע</button>
                 </div>`;
 
+                // Наполняем таблицу отчета
                 tbody.innerHTML += `<tr>
                     <td>${task.dateStr}</td>
                     <td>${task.inspector || "אנדרי"}</td>
@@ -471,6 +498,33 @@
             loadTasks();
         }
 
+        // ПУЛЕНЕПРОБИВАЕМАЯ ФУНКЦИЯ ПЕЧАТИ ОТЧЕТА РУКОВОДИТЕЛЯ
+        function printManagerReport() { 
+            // 1. Скрываем экранный UI
+            document.getElementById('noPrintUI').style.display = 'none';
+            
+            // 2. Показываем таблицу
+            const printTitle = document.getElementById('printTitleManager');
+            const printTable = document.getElementById('managerTable');
+            
+            const selDate = document.getElementById('filterDate').value || 'כל התאריכים';
+            printTitle.innerText = `דוח מנהל - ${currentTab} (${selDate})`;
+            
+            printTitle.style.display = 'block';
+            printTable.style.display = 'table';
+            
+            // 3. Отправляем на печать с задержкой для браузера
+            setTimeout(() => { 
+                window.print(); 
+                
+                // 4. Возвращаем всё обратно после закрытия окна печати
+                document.getElementById('noPrintUI').style.display = 'block';
+                printTitle.style.display = 'none';
+                printTable.style.display = 'none';
+            }, 300); 
+        }
+
+        // ПУЛЕНЕПРОБИВАЕМАЯ ФУНКЦИЯ ПЕЧАТИ КАРТОЧЕК
         function printTasks() { 
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
@@ -522,17 +576,20 @@
                 }
             }
 
-            document.body.classList.remove('manager-report-mode'); 
-            document.body.classList.add('task-print-mode'); 
+            // 1. Скрываем UI
+            document.getElementById('noPrintUI').style.display = 'none';
+            // 2. Показываем карточки
+            printContainer.style.display = 'block';
             
             setTimeout(() => { 
                 window.print(); 
+                
+                // 3. Возвращаем UI обратно
+                document.getElementById('noPrintUI').style.display = 'block';
+                printContainer.style.display = 'none';
                 renderTasks(); 
-            }, 200); 
+            }, 300); 
         }
-
-        function printManagerReport() { document.body.classList.remove('task-print-mode'); document.body.classList.add('manager-report-mode'); document.getElementById('printTitleManager').innerText = `דוח מנהל - ${currentTab}`; setTimeout(() => { window.print(); }, 200); }
-        window.addEventListener('afterprint', () => { document.body.classList.remove('task-print-mode','manager-report-mode'); });
     </script>
 </body>
 </html>
