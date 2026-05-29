@@ -25,29 +25,36 @@
         
         .in-progress-stamp { border: 3px solid #f97316; color: #f97316; transform: rotate(-5deg); font-family: 'Impact', sans-serif; }
 
-        /* Кастомный стиль для точек под датами в календаре Flatpickr */
         .flatpickr-day.has-tasks-dot::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: #4f46e5;
-            border-radius: 50%;
+            content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+            width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
-        @media screen { .print-only { display: none !important; } }
+        /* Жесткое сокрытие элементов печати на экране */
+        @media screen { 
+            #managerTable, #printTitleManager, #printTasksContainer { display: none !important; } 
+        }
 
+        /* ИСПРАВЛЕНО: Безупречная логика изоляции для принтера */
         @media print {
             @page { size: A4 portrait; margin: 5mm; }
             body { background: white; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
             .no-print { display: none !important; }
             
+            /* Скрываем всё лишнее по умолчанию */
             #managerTable, #printTitleManager, #printTasksContainer { display: none !important; }
+
+            /* Режим печати карточек */
             body.task-print-mode #printTasksContainer { display: block !important; }
 
+            /* Режим отчета руководителя */
+            body.manager-report-mode #printTitleManager { display: block !important; font-size: 22px; font-weight: bold; text-align: center; text-decoration: underline; margin-top: 5mm; margin-bottom: 5mm; }
+            body.manager-report-mode #managerTable { display: table !important; width: 100%; border-collapse: collapse; margin-top: 5mm; }
+            
+            #managerTable th, #managerTable td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 13px; }
+            #managerTable th { background-color: #f3f4f6 !important; font-weight: bold; }
+
+            /* Карточки печати */
             .print-page { width: 100%; height: 282mm; page-break-after: always; box-sizing: border-box; padding: 5mm; display: flex; flex-direction: column; }
             .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 10px; height: 30px; }
             .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; height: calc(100% - 40px); }
@@ -59,11 +66,6 @@
             .defect-title { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
             .defect-comment { font-size: 15px; color: #374151; }
             .signature-box { border-top: 2px dashed #000; margin-top: auto; padding-top: 5px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
-
-            body.manager-report-mode #managerTable { display: table !important; width: 100%; border-collapse: collapse; margin-top: 5mm; }
-            body.manager-report-mode #printTitleManager { display: block !important; font-size: 22px; font-weight: bold; text-align: center; text-decoration: underline; margin-top: 5mm; margin-bottom: 5mm; }
-            body.manager-report-mode th, body.manager-report-mode td { border: 1px solid #000; padding: 6px; text-align: right; font-size: 13px; }
-            body.manager-report-mode th { background: #f3f4f6; font-weight: bold; }
         }
     </style>
 </head>
@@ -89,9 +91,8 @@
 
     <div id="mainApp" class="hidden max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-full">
         
-        <div id="unprintedAlertBanner" class="hidden bg-amber-50 border-r-4 border-amber-500 p-5 rounded-2xl mb-6 shadow-sm no-print">
-            <div class="flex items-start gap-3 w-full" id="unprintedAlertText">
-                </div>
+        <div id="unprintedAlertBanner" class="hidden mb-6 no-print">
+            <div id="unprintedAlertText" class="w-full"></div>
         </div>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6 no-print">
@@ -132,7 +133,6 @@
         </div>
 
         <div class="print-only" id="printTitleManager"></div>
-        
         <table id="managerTable" class="print-only">
             <thead>
                 <tr>
@@ -158,7 +158,6 @@
         let currentTab = "חשמל";
         let fpInstance = null;
 
-        // Отслеживание прокрутки для кнопки "Наверх"
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('backToTopBtn');
             if (window.scrollY > 300) {
@@ -169,32 +168,22 @@
         });
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Инициализация календаря Flatpickr с поддержкой отметки выполненных проверок
             fpInstance = flatpickr("#filterDate", {
                 dateFormat: "Y-m-d",
                 defaultDate: new Date(),
                 allowInput: false,
-                onChange: function() {
-                    renderTasks();
-                },
+                onChange: function() { renderTasks(); },
                 onDayCreate: function(dObj, dStr, fp, dayElem) {
                     if (!allTasks || allTasks.length === 0) return;
-                    
-                    // Переводим дату ячейки в формат YYYY-MM-DD для сверки
                     const cellDate = dayElem.dateObj;
                     const offsetObj = new Date(cellDate.getTime() - cellDate.getTimezoneOffset() * 60000);
                     const dateKey = offsetObj.toISOString().split('T')[0];
-
-                    // Если в этот день есть задачи в системе — вешаем точку
                     const hasTasksOnDay = allTasks.some(t => {
                         const p = t.dateStr.split(" ")[0].split("/");
                         const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
                         return taskIso === dateKey;
                     });
-
-                    if (hasTasksOnDay) {
-                        dayElem.classList.add("has-tasks-dot");
-                    }
+                    if (hasTasksOnDay) { dayElem.classList.add("has-tasks-dot"); }
                 }
             });
         });
@@ -227,10 +216,7 @@
                 const res = await fetch(`${API_URL}?action=getOpenTasks`);
                 const data = await res.json();
                 allTasks = data.tasks || [];
-                
-                // Перерисовываем календарь, чтобы наложить точки дней
                 if(fpInstance) fpInstance.redraw();
-                
                 renderTasks();
             } catch(e) { console.error("Ошибка загрузки:", e); }
             document.getElementById('loader').classList.add('hidden');
@@ -289,7 +275,6 @@
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
             let now = new Date();
 
-            // Динамический фильтр отделений
             let tasksForDeptFilter = allTasks.filter(t => t.sheet === currentTab);
             if(fDate) {
                 tasksForDeptFilter = tasksForDeptFilter.filter(t => {
@@ -306,7 +291,6 @@
             activeDepts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
             if (activeDepts.includes(previousValue)) { sel.value = previousValue; }
 
-            // Фильтрация текущего вывода задач
             let filtered = allTasks.filter(t => t.sheet === currentTab);
             if(fDept !== "ALL") filtered = filtered.filter(t => t.dept === fDept);
             if(fDate) {
@@ -317,42 +301,57 @@
                 });
             }
             
-            // СБОР АНАЛИТИКИ ДЛЯ ОБНОВЛЕННОГО ВЕРХНЕГО БАННЕРА
-            let unprintedGroups = {}; // Для фиксации "Отделение (Дата)"
-            let overdueCounter = 0;   // Счетчик > 48 часов
+            // ИСПРАВЛЕНО: Сбор данных для умного баннера
+            let unprintedList = [];
+            let overdueList = [];
 
             allTasks.forEach(t => {
                 const tKey = makeTaskKey(t);
                 const isPrinted = printedKeys.includes(tKey);
                 
-                // Вычисление возраста задачи
                 const p = t.dateStr.split(" ")[0].split("/");
                 const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
                 const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
                 const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60);
+                const dateOnly = t.dateStr.split(" ")[0];
 
                 if (!isPrinted) {
-                    const dateOnly = t.dateStr.split(" ")[0];
-                    unprintedGroups[`מחלקה ${t.dept} (${dateOnly})`] = true;
+                    let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
+                    if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr);
                 }
 
                 if (diffHours >= 48) {
-                    overdueCounter++;
+                    let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
+                    if(!overdueList.includes(itemStr)) overdueList.push(itemStr);
                 }
             });
 
-            const unprintedList = Object.keys(unprintedGroups);
             const banner = document.getElementById('unprintedAlertBanner');
             const bannerTextZone = document.getElementById('unprintedAlertText');
 
-            if (unprintedList.length > 0 || overdueCounter > 0) {
-                let bannerHtml = `<div class="flex flex-col gap-2 w-full text-right text-sm">`;
+            if (unprintedList.length > 0 || overdueList.length > 0) {
+                let bannerHtml = `<div class="flex flex-col gap-3 w-full text-right text-sm">`;
+                
                 if (unprintedList.length > 0) {
-                    bannerHtml += `<p class="text-amber-900 font-medium"><i class="fas fa-print ml-1 text-amber-600"></i> <strong>מחלקות ותאריכים שלא יצאו לעבודה (לא הודפסו):</strong> ${unprintedList.join(', ')}</p>`;
+                    bannerHtml += `
+                    <div class="bg-amber-100/70 p-4 rounded-xl border border-amber-300 shadow-sm">
+                        <p class="text-amber-900 font-black mb-2 text-base"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p>
+                        <ul class="list-disc list-inside text-amber-800 font-medium space-y-1 pr-2">
+                            ${unprintedList.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>`;
                 }
-                if (overdueCounter > 0) {
-                    bannerHtml += `<p class="text-red-700 font-bold"><i class="fas fa-clock ml-1 text-red-600"></i> <strong>תקוע במערכת:</strong> ישנן ${overdueCounter} תקלות פתוחות מעל 48 שעות!</p>`;
+                
+                if (overdueList.length > 0) {
+                    bannerHtml += `
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
+                        <p class="text-red-800 font-black mb-2 text-base"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p>
+                        <ul class="list-disc list-inside text-red-700 font-medium space-y-1 pr-2">
+                            ${overdueList.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>`;
                 }
+                
                 bannerHtml += `</div>`;
                 bannerTextZone.innerHTML = bannerHtml;
                 banner.classList.remove('hidden');
@@ -404,7 +403,6 @@
                     <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-3 rounded-xl font-bold">בוצע</button>
                 </div>`;
 
-                // ИЗМЕНЕНО: Наполнение таблицы отчета строго по новым заголовкам руководства
                 tbody.innerHTML += `<tr>
                     <td>${task.dateStr}</td>
                     <td>${task.inspector || "אנדרי"}</td>
