@@ -30,7 +30,6 @@
             width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
-        /* ОПТИМИЗИРОВАННЫЙ РЕЖИМ ПЕЧАТИ */
         @media print {
             @page { size: A4 portrait; margin: 8mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
@@ -43,21 +42,11 @@
             .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
             .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 30px; }
             
-            /* Сетка для 4 карточек */
             .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 40px); }
-            
-            /* Сама карточка занимает почти 50% высоты и ширины */
             .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
-            
             .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
-            
-            /* Блок с фото и текстом */
             .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
-            
-            /* УВЕЛИЧЕНО ФОТО: 68% ширины и тянется на всю доступную высоту */
             .print-photo { width: 68%; height: 100%; max-height: 380px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
-            
-            /* Блок текста: 32% ширины */
             .print-info { width: 32%; display: flex; flex-direction: column; }
             .defect-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
             .defect-comment { font-size: 14px; color: #374151; line-height: 1.2; }
@@ -79,7 +68,7 @@
     </div>
 
     <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center">
-        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600">מעדכן נתונים...</p></div>
+        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעדכן נתונים...</p></div>
     </div>
 
     <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 opacity-0 invisible">
@@ -194,6 +183,12 @@
             });
         });
 
+        function showLoader(text = "מעדכן נתונים...") {
+            document.getElementById('loaderText').innerText = text;
+            document.getElementById('loader').classList.remove('hidden');
+        }
+        function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
+
         function checkPin() {
             if(document.getElementById('pinCode').value === "1234") { 
                 document.getElementById('loginScreen').classList.add('hidden');
@@ -212,24 +207,18 @@
 
         function escapeStr(str) { return String(str || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
-        function makeTaskKey(task) {
-            return `${task.sheet}_${task.dateStr}_${task.room}_${task.defect}`.replace(/\s+/g, '_');
-        }
-
         function toggleBannerDetails() {
             const details = document.getElementById('bannerDetails');
             const chevron = document.getElementById('bannerChevron');
             if(details.classList.contains('hidden')) {
-                details.classList.remove('hidden');
-                chevron.style.transform = 'rotate(180deg)';
+                details.classList.remove('hidden'); chevron.style.transform = 'rotate(180deg)';
             } else {
-                details.classList.add('hidden');
-                chevron.style.transform = 'rotate(0deg)';
+                details.classList.add('hidden'); chevron.style.transform = 'rotate(0deg)';
             }
         }
 
         async function loadTasks() {
-            document.getElementById('loader').classList.remove('hidden');
+            showLoader();
             try {
                 const res = await fetch(`${API_URL}?action=getOpenTasks`);
                 const data = await res.json();
@@ -237,7 +226,7 @@
                 if(fpInstance) fpInstance.redraw();
                 renderTasks();
             } catch(e) { console.error("Ошибка загрузки:", e); }
-            document.getElementById('loader').classList.add('hidden');
+            hideLoader();
         }
 
         function switchTab(t) { 
@@ -254,12 +243,17 @@
             renderTasks(); 
         }
 
-        function resetPrintStamp(tKey) {
+        // ИСПРАВЛЕНО: Снятие штампа теперь отправляется прямо в БД
+        async function resetPrintStamp(sh, rm, df) {
             if(!confirm("לבטל את סטטוס 'בעבודה' למשימה זו?")) return;
-            let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
-            printedKeys = printedKeys.filter(k => k !== tKey);
-            localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
-            renderTasks();
+            showLoader("מעדכן סטטוס...");
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: sh, room: rm, defect: df }] })
+                });
+                await loadTasks(); // Перезагружаем задачи из БД, чтобы увидеть статус "פתוח"
+            } catch(e) { console.error(e); hideLoader(); }
         }
 
         function toggleSelectAll() {
@@ -275,24 +269,17 @@
             const btn = document.getElementById('selectAllBtn');
             if(!btn || checkboxes.length === 0) return;
             const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            if (anyUnchecked) {
-                btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`;
-            } else {
-                btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`;
-            }
+            if (anyUnchecked) { btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`; } 
+            else { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; }
         }
 
         async function moveTask(srcSheet, dt, rm, df, realIdx, tgtSheet) {
             if (!tgtSheet) return;
-            if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) {
-                document.querySelector(`#task-card-${realIdx} select`).value = "";
-                return;
-            }
-            document.getElementById('loader').classList.remove('hidden');
+            if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) { document.querySelector(`#task-card-${realIdx} select`).value = ""; return; }
+            showLoader("מעביר...");
             try {
                 const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: srcSheet, targetSheet: tgtSheet, room: rm, defect: df })
+                    method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: srcSheet, targetSheet: tgtSheet, room: rm, defect: df })
                 });
                 const out = await res.json();
                 if(out.status === "success") {
@@ -301,7 +288,7 @@
                     renderTasks();
                 }
             } catch(e) { console.error(e); }
-            document.getElementById('loader').classList.add('hidden');
+            hideLoader();
         }
 
         function renderTasks() {
@@ -311,8 +298,6 @@
             
             const fDept = document.getElementById('filterDept').value;
             const fDate = document.getElementById('filterDate').value;
-
-            let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
             let now = new Date();
 
             let tasksForDeptFilter = allTasks; 
@@ -345,8 +330,8 @@
             let unprintedTaskCount = 0; let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
-                const tKey = makeTaskKey(t);
-                const isPrinted = printedKeys.includes(tKey);
+                // ИСПРАВЛЕНО: Теперь мы опираемся ТОЛЬКО на данные с сервера, без localStorage
+                const isPrinted = (t.status === "בעבודה"); 
                 
                 const p = t.dateStr.split(" ")[0].split("/");
                 const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
@@ -397,8 +382,7 @@
             filtered.forEach((task) => {
                 const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                 const img = fixImageUrl(task.photo);
-                const tKey = makeTaskKey(task);
-                const isPrinted = printedKeys.includes(tKey);
+                const isPrinted = (task.status === "בעבודה"); 
                 
                 const safeSheet = escapeStr(task.sheet);
                 const safeDateStr = escapeStr(task.dateStr);
@@ -411,7 +395,7 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
                         <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" 
-                               data-index="${realIdx}" data-key="${tKey}" data-sheet="${safeSheet}" data-date="${safeDateStr}" data-room="${safeRoom}" data-defect="${safeDefect}" onchange="updateSelectAllBtn()">
+                               data-index="${realIdx}" data-sheet="${safeSheet}" data-date="${safeDateStr}" data-room="${safeRoom}" data-defect="${safeDefect}" onchange="updateSelectAllBtn()">
                     </div>
                     <img src="${img}" class="w-24 h-24 object-cover rounded-xl border" onerror="this.src='https://placehold.co/100x100?text=No+Photo'">
                     <div class="flex-grow pr-10 md:pr-0">
@@ -420,7 +404,7 @@
                             ${isPrinted ? `
                                 <div class="flex items-center gap-2">
                                     <span class="in-progress-stamp text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider">בעבודה / В работе</span>
-                                    <button onclick="resetPrintStamp('${tKey}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo"></i></button>
+                                    <button onclick="resetPrintStamp('${safeSheet}', '${safeRoom}', '${safeDefect}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo"></i></button>
                                 </div>
                             ` : ''}
                         </div>
@@ -437,7 +421,7 @@
                             <option value="בטיחות">בטיחות (Безопасность)</option>
                             <option value="ליקויים">כללי (Общие)</option>
                         </select>
-                        <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
+                        <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
                     </div>
                 </div>`;
 
@@ -448,14 +432,14 @@
                     <td>${task.room}</td>
                     <td>${task.defect}</td>
                     <td>${task.comment || ""}</td>
-                    <td>פתוח</td>
+                    <td>${isPrinted ? "בעבודה" : "פתוח"}</td>
                 </tr>`;
             });
 
             updateSelectAllBtn();
         }
 
-        async function closeTask(sh, dt, rm, df, realIdx, tKey) {
+        async function closeTask(sh, dt, rm, df, realIdx) {
             if(!confirm("לסגור את המשימה?")) return;
             const b = document.getElementById(`btn-${realIdx}`);
             b.innerHTML = "..."; b.disabled = true;
@@ -468,10 +452,6 @@
                     const cb = document.querySelector(`.task-checkbox[data-index="${realIdx}"]`);
                     if(cb) { cb.checked = false; cb.disabled = true; }
                     
-                    let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
-                    printedKeys = printedKeys.filter(k => k !== tKey);
-                    localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
-
                     allTasks = allTasks.filter(t => !(t.sheet === sh && t.dateStr === dt && t.room == rm && t.defect === df));
                     if(fpInstance) fpInstance.redraw();
                     setTimeout(renderTasks, 500);
@@ -484,24 +464,20 @@
             if(checkboxes.length === 0) { alert("בחר לפחות משימה אחת!"); return; }
             if(!confirm(`לסגור ${checkboxes.length} משימות?`)) return;
             
-            document.getElementById('loader').classList.remove('hidden');
-            let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
-
+            showLoader("סוגר משימות...");
             for(let cb of checkboxes) {
-                const idx = cb.dataset.index; const sh = cb.dataset.sheet; const dt = cb.dataset.date; const rm = cb.dataset.room; const df = cb.dataset.defect; const tKey = cb.dataset.key;
+                const idx = cb.dataset.index; const sh = cb.dataset.sheet; const dt = cb.dataset.date; const rm = cb.dataset.room; const df = cb.dataset.defect;
                 try {
                     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: sh, date: dt, room: rm, defect: df }) });
                     const out = await res.json();
                     if(out.status === "success") {
-                        printedKeys = printedKeys.filter(k => k !== tKey);
                         allTasks = allTasks.filter(t => !(t.sheet === sh && t.dateStr === dt && t.room == rm && t.defect === df));
                     }
                 } catch(e) { console.error(e); }
             }
-            localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
             if(fpInstance) fpInstance.redraw();
-            document.getElementById('loader').classList.add('hidden');
-            loadTasks();
+            hideLoader();
+            renderTasks();
         }
 
         function printManagerReport() { 
@@ -520,25 +496,29 @@
             }, 300); 
         }
 
-        function printTasks() { 
+        // ИСПРАВЛЕНО: Механизм печати, который сначала отправляет статусы на сервер, а потом печатает
+        async function printTasks() { 
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
 
-            let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
             let tasksToPrint = [];
+            let tasksToUpdateOnServer = [];
 
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
-                    const tKey = cb.dataset.key;
-                    if (!printedKeys.includes(tKey)) { printedKeys.push(tKey); }
+                    // Если у задачи еще нет статуса "В работе", добавляем в очередь на отправку в БД
+                    if (task.status !== "בעבודה") {
+                        tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect });
+                    }
+                    
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                     const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     tasksToPrint.push({...task, actT, img, dDate});
                 }
             });
-            localStorage.setItem('hcl_printed_tasks', JSON.stringify(printedKeys));
 
+            // Формируем HTML для печати
             let groups = {};
             tasksToPrint.forEach(task => {
                 let key = `${task.dept}|${task.dDate}`;
@@ -567,13 +547,27 @@
                 }
             }
 
+            // Отправляем статусы в БД перед печатью (займет ~1-2 секунды)
+            if (tasksToUpdateOnServer.length > 0) {
+                showLoader("מכין להדפסה...");
+                try {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer })
+                    });
+                } catch(e) { console.error("Ошибка обновления статусов печати", e); }
+                hideLoader();
+            }
+
             document.getElementById('noPrintUI').style.display = 'none';
             printContainer.style.display = 'block';
             
             setTimeout(() => { 
                 window.print(); 
                 document.getElementById('noPrintUI').style.display = 'block';
-                printContainer.style.display = 'none'; renderTasks(); 
+                printContainer.style.display = 'none'; 
+                // Загружаем обновленные задачи из БД, чтобы начальник точно увидел изменения!
+                loadTasks(); 
             }, 300); 
         }
     </script>
