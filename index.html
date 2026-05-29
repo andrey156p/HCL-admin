@@ -30,8 +30,9 @@
             width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
+        /* ОПТИМИЗИРОВАННЫЙ РЕЖИМ ПЕЧАТИ */
         @media print {
-            @page { size: A4 portrait; margin: 10mm; }
+            @page { size: A4 portrait; margin: 8mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
             
             #managerTable { width: 100%; border-collapse: collapse; margin-top: 10mm; direction: rtl; }
@@ -39,17 +40,29 @@
             #managerTable th { background-color: #e5e7eb !important; font-weight: bold; }
             #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; }
 
-            .print-page { width: 100%; height: 275mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
-            .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 10px; height: 30px; }
-            .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; height: calc(100% - 40px); }
-            .print-card { width: 48.8%; height: 48.8%; border: 2px solid #000; border-radius: 10px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
-            .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-bottom: 10px; }
-            .print-card-body { display: flex; gap: 15px; flex-grow: 1; align-items: flex-start; }
-            .print-photo { width: 60%; height: 280px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
-            .print-info { width: 40%; display: flex; flex-direction: column; }
-            .defect-title { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
-            .defect-comment { font-size: 15px; color: #374151; }
-            .signature-box { border-top: 2px dashed #000; margin-top: auto; padding-top: 5px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+            .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
+            .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 30px; }
+            
+            /* Сетка для 4 карточек */
+            .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 40px); }
+            
+            /* Сама карточка занимает почти 50% высоты и ширины */
+            .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
+            
+            .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
+            
+            /* Блок с фото и текстом */
+            .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
+            
+            /* УВЕЛИЧЕНО ФОТО: 68% ширины и тянется на всю доступную высоту */
+            .print-photo { width: 68%; height: 100%; max-height: 380px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
+            
+            /* Блок текста: 32% ширины */
+            .print-info { width: 32%; display: flex; flex-direction: column; }
+            .defect-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
+            .defect-comment { font-size: 14px; color: #374151; line-height: 1.2; }
+            
+            .signature-box { border-top: 2px dashed #000; margin-top: 8px; padding-top: 6px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
         }
     </style>
 </head>
@@ -269,7 +282,6 @@
             }
         }
 
-        // === НОВАЯ ФУНКЦИЯ: ОПЕРАТИВНЫЙ ПЕРЕНОС МЕЖДУ ЛИСТАМИ (ТАБАМИ) ===
         async function moveTask(srcSheet, dt, rm, df, realIdx, tgtSheet) {
             if (!tgtSheet) return;
             if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) {
@@ -284,7 +296,6 @@
                 });
                 const out = await res.json();
                 if(out.status === "success") {
-                    // Исключаем задачу из локального массива, и она мгновенно исчезает с экрана
                     allTasks = allTasks.filter(t => !(t.sheet === srcSheet && t.dateStr === dt && t.room == rm && t.defect === df));
                     if(fpInstance) fpInstance.redraw();
                     renderTasks();
@@ -396,7 +407,6 @@
                 
                 const realIdx = allTasks.indexOf(task);
 
-                // ИЗМЕНЕНО: Рядом с кнопкой "בוצע" добавлен селектор изменения предназначения работы
                 screen.innerHTML += `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
@@ -550,7 +560,7 @@
                                 <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
                                 <div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div>
                             </div>
-                            <div class="signature-box"><span>שם: _________</span><span>תаריך: _________</span><span>חתימה: _________</span></div>
+                            <div class="signature-box"><span>שם: _________</span><span>תאריך: _________</span><span>חתימה: _________</span></div>
                         </div>`;
                     });
                     printContainer.innerHTML += page + `</div></div>`;
