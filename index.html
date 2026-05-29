@@ -96,7 +96,18 @@
                     <div class="flex gap-2 flex-wrap justify-center">
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
-                        <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-500 shadow"><i class="fas fa-print ml-2"></i>הדפסת כרטיסיות</button>
+                        
+                        <div class="flex items-center bg-orange-50 border border-orange-200 rounded-xl overflow-hidden shadow">
+                            <select id="printLang" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none cursor-pointer text-sm">
+                                <option value="he">🇮🇱 עברית</option>
+                                <option value="ru">🇷🇺 Русский</option>
+                                <option value="ar">🇦🇪 العربية</option>
+                            </select>
+                            <button onclick="printTasks()" class="bg-orange-600 text-white px-4 py-2 font-bold hover:bg-orange-500 transition-colors border-r border-orange-700">
+                                <i class="fas fa-print ml-2"></i>הדפס
+                            </button>
+                        </div>
+                        
                         <button onclick="printManagerReport()" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-table ml-2"></i>דוח מנהל</button>
                         <button onclick="loadTasks()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-200"><i class="fas fa-sync-alt"></i></button>
                     </div>
@@ -205,8 +216,6 @@
             return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         }
 
-        function escapeStr(str) { return String(str || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
-
         function toggleBannerDetails() {
             const details = document.getElementById('bannerDetails');
             const chevron = document.getElementById('bannerChevron');
@@ -243,16 +252,17 @@
             renderTasks(); 
         }
 
-        // ИСПРАВЛЕНО: Снятие штампа теперь отправляется прямо в БД
-        async function resetPrintStamp(sh, rm, df) {
+        // ИСПРАВЛЕНО: Фронтенд теперь ищет задачу по её индексу
+        async function resetPrintStamp(realIdx) {
+            const task = allTasks[realIdx];
             if(!confirm("לבטל את סטטוס 'בעבודה' למשימה זו?")) return;
             showLoader("מעדכן סטטוס...");
             try {
                 await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: sh, room: rm, defect: df }] })
+                    body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "" }] })
                 });
-                await loadTasks(); // Перезагружаем задачи из БД, чтобы увидеть статус "פתוח"
+                await loadTasks(); 
             } catch(e) { console.error(e); hideLoader(); }
         }
 
@@ -273,17 +283,19 @@
             else { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; }
         }
 
-        async function moveTask(srcSheet, dt, rm, df, realIdx, tgtSheet) {
+        // ИСПРАВЛЕНО: Теперь передаем комментарий при переносе задачи
+        async function moveTask(realIdx, tgtSheet) {
+            const task = allTasks[realIdx];
             if (!tgtSheet) return;
             if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) { document.querySelector(`#task-card-${realIdx} select`).value = ""; return; }
             showLoader("מעביר...");
             try {
                 const res = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: srcSheet, targetSheet: tgtSheet, room: rm, defect: df })
+                    method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: task.sheet, targetSheet: tgtSheet, room: task.room, defect: task.defect, comment: task.comment || "" })
                 });
                 const out = await res.json();
                 if(out.status === "success") {
-                    allTasks = allTasks.filter(t => !(t.sheet === srcSheet && t.dateStr === dt && t.room == rm && t.defect === df));
+                    allTasks = allTasks.filter(t => t !== task);
                     if(fpInstance) fpInstance.redraw();
                     renderTasks();
                 }
@@ -330,7 +342,6 @@
             let unprintedTaskCount = 0; let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
-                // ИСПРАВЛЕНО: Теперь мы опираемся ТОЛЬКО на данные с сервера, без localStorage
                 const isPrinted = (t.status === "בעבודה"); 
                 
                 const p = t.dateStr.split(" ")[0].split("/");
@@ -384,18 +395,14 @@
                 const img = fixImageUrl(task.photo);
                 const isPrinted = (task.status === "בעבודה"); 
                 
-                const safeSheet = escapeStr(task.sheet);
-                const safeDateStr = escapeStr(task.dateStr);
-                const safeRoom = escapeStr(task.room);
-                const safeDefect = escapeStr(task.defect);
-                
                 const realIdx = allTasks.indexOf(task);
 
+                // ИСПРАВЛЕНО: Инлайновые обработчики теперь принимают только realIdx
                 screen.innerHTML += `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
                         <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" 
-                               data-index="${realIdx}" data-sheet="${safeSheet}" data-date="${safeDateStr}" data-room="${safeRoom}" data-defect="${safeDefect}" onchange="updateSelectAllBtn()">
+                               data-index="${realIdx}" onchange="updateSelectAllBtn()">
                     </div>
                     <img src="${img}" class="w-24 h-24 object-cover rounded-xl border" onerror="this.src='https://placehold.co/100x100?text=No+Photo'">
                     <div class="flex-grow pr-10 md:pr-0">
@@ -404,7 +411,7 @@
                             ${isPrinted ? `
                                 <div class="flex items-center gap-2">
                                     <span class="in-progress-stamp text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider">בעבודה / В работе</span>
-                                    <button onclick="resetPrintStamp('${safeSheet}', '${safeRoom}', '${safeDefect}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo"></i></button>
+                                    <button onclick="resetPrintStamp(${realIdx})" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo"></i></button>
                                 </div>
                             ` : ''}
                         </div>
@@ -412,7 +419,7 @@
                         <p class="text-gray-500 text-sm">${task.comment || ""}</p>
                     </div>
                     <div class="flex flex-row md:flex-col items-center justify-center gap-2">
-                        <select onchange="moveTask('${safeSheet}', '${safeDateStr}', '${safeRoom}', '${safeDefect}', ${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer">
+                        <select onchange="moveTask(${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer">
                             <option value="" disabled selected>העבר צוות...</option>
                             <option value="חשמל">חשמל (Электрика)</option>
                             <option value="מיזוג_אוויר">מיזוג (Кондиционирование)</option>
@@ -421,7 +428,7 @@
                             <option value="בטיחות">בטיחות (Безопасность)</option>
                             <option value="ליקויים">כללי (Общие)</option>
                         </select>
-                        <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
+                        <button id="btn-${realIdx}" onclick="closeTask(${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
                     </div>
                 </div>`;
 
@@ -439,12 +446,14 @@
             updateSelectAllBtn();
         }
 
-        async function closeTask(sh, dt, rm, df, realIdx) {
+        // ИСПРАВЛЕНО: Закрытие передает комментарий в бэкенд
+        async function closeTask(realIdx) {
+            const task = allTasks[realIdx];
             if(!confirm("לסגור את המשימה?")) return;
             const b = document.getElementById(`btn-${realIdx}`);
             b.innerHTML = "..."; b.disabled = true;
             try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: sh, date: dt, room: rm, defect: df }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
                 const out = await res.json();
                 if(out.status === "success") {
                     document.getElementById(`task-card-${realIdx}`).style.opacity="0.3";
@@ -452,7 +461,7 @@
                     const cb = document.querySelector(`.task-checkbox[data-index="${realIdx}"]`);
                     if(cb) { cb.checked = false; cb.disabled = true; }
                     
-                    allTasks = allTasks.filter(t => !(t.sheet === sh && t.dateStr === dt && t.room == rm && t.defect === df));
+                    allTasks = allTasks.filter(t => t !== task);
                     if(fpInstance) fpInstance.redraw();
                     setTimeout(renderTasks, 500);
                 }
@@ -466,13 +475,11 @@
             
             showLoader("סוגר משימות...");
             for(let cb of checkboxes) {
-                const idx = cb.dataset.index; const sh = cb.dataset.sheet; const dt = cb.dataset.date; const rm = cb.dataset.room; const df = cb.dataset.defect;
+                const task = allTasks[cb.dataset.index];
                 try {
-                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: sh, date: dt, room: rm, defect: df }) });
+                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
                     const out = await res.json();
-                    if(out.status === "success") {
-                        allTasks = allTasks.filter(t => !(t.sheet === sh && t.dateStr === dt && t.room == rm && t.defect === df));
-                    }
+                    if(out.status === "success") { allTasks = allTasks.filter(t => t !== task); }
                 } catch(e) { console.error(e); }
             }
             if(fpInstance) fpInstance.redraw();
@@ -496,29 +503,61 @@
             }, 300); 
         }
 
-        // ИСПРАВЛЕНО: Механизм печати, который сначала отправляет статусы на сервер, а потом печатает
+        // ИСПРАВЛЕНО: Печать отправляет комментарии для маркировки в БД
         async function printTasks() { 
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
 
+            const targetLang = document.getElementById('printLang').value; 
             let tasksToPrint = [];
             let tasksToUpdateOnServer = [];
+            let translationPayload = [];
 
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
-                    // Если у задачи еще нет статуса "В работе", добавляем в очередь на отправку в БД
-                    if (task.status !== "בעבודה") {
-                        tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect });
-                    }
+                    if (task.status !== "בעבודה") { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "" }); }
                     
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                     const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
-                    tasksToPrint.push({...task, actT, img, dDate});
+                    let printTask = {...task, actT, img, dDate, id: realIdx};
+                    
+                    if (targetLang !== 'he') { translationPayload.push({ id: realIdx, defect: task.defect, comment: task.comment, actT: actT }); }
+                    tasksToPrint.push(printTask);
                 }
             });
 
-            // Формируем HTML для печати
+            let printLabels = { room: "חדר: ", name: "שם: ", date: "תאריך: ", sign: "חתימה: " };
+            let textDirection = "rtl";
+
+            if (targetLang !== 'he' && translationPayload.length > 0) {
+                let loadLang = targetLang === 'ru' ? "מתרגם לרוסית..." : "מתרגם לערבית...";
+                showLoader(loadLang);
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST', body: JSON.stringify({ action: "TRANSLATE_TASKS", targetLang: targetLang, tasks: translationPayload })
+                    });
+                    const transData = await res.json();
+                    
+                    if (transData.status === "success" && transData.translations) {
+                        transData.translations.forEach(transItem => {
+                            let matchTask = tasksToPrint.find(t => t.id === transItem.id);
+                            if (matchTask) { matchTask.defect = transItem.defect; matchTask.comment = transItem.comment; matchTask.actT = transItem.actT; }
+                        });
+                        printLabels = transData.translations[0].labels; 
+                        textDirection = (targetLang === 'ru') ? "ltr" : "rtl"; 
+                    }
+                } catch (e) { console.error("Ошибка перевода", e); alert("שגיאה בתרגום. יודפס בעברית."); }
+                hideLoader();
+            }
+
+            if (tasksToUpdateOnServer.length > 0) {
+                showLoader("מכין להדפסה...");
+                try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer }) }); } 
+                catch(e) { console.error(e); }
+                hideLoader();
+            }
+
             let groups = {};
             tasksToPrint.forEach(task => {
                 let key = `${task.dept}|${task.dDate}`;
@@ -533,30 +572,27 @@
                 for(let i=0; i<g.length; i+=4) {
                     let chunk = g.slice(i, i+4);
                     let page = `<div class="print-page"><div class="print-page-header">צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך: ${g[0].dDate}</div><div class="print-cards-grid">`;
+                    
                     chunk.forEach(t => {
-                        page += `<div class="print-card">
-                            <div class="print-card-top"><span class="font-black text-xl">חדר: ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
+                        page += `
+                        <div class="print-card" dir="${textDirection}">
+                            <div class="print-card-top"><span class="font-black text-xl">${printLabels.room} ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
                             <div class="print-card-body">
                                 <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
-                                <div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div>
+                                <div class="print-info">
+                                    <p class="defect-title">${t.defect}</p>
+                                    <p class="defect-comment">${t.comment || ""}</p>
+                                </div>
                             </div>
-                            <div class="signature-box"><span>שם: _________</span><span>תאריך: _________</span><span>חתימה: _________</span></div>
+                            <div class="signature-box" dir="${textDirection}">
+                                <span>${printLabels.name} _________</span>
+                                <span>${printLabels.date} _________</span>
+                                <span>${printLabels.sign} _________</span>
+                            </div>
                         </div>`;
                     });
                     printContainer.innerHTML += page + `</div></div>`;
                 }
-            }
-
-            // Отправляем статусы в БД перед печатью (займет ~1-2 секунды)
-            if (tasksToUpdateOnServer.length > 0) {
-                showLoader("מכין להדפסה...");
-                try {
-                    await fetch(API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer })
-                    });
-                } catch(e) { console.error("Ошибка обновления статусов печати", e); }
-                hideLoader();
             }
 
             document.getElementById('noPrintUI').style.display = 'none';
@@ -566,7 +602,6 @@
                 window.print(); 
                 document.getElementById('noPrintUI').style.display = 'block';
                 printContainer.style.display = 'none'; 
-                // Загружаем обновленные задачи из БД, чтобы начальник точно увидел изменения!
                 loadTasks(); 
             }, 300); 
         }
