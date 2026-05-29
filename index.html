@@ -30,18 +30,15 @@
             width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
-        /* Жесткие стили для печати: мы управляем видимостью через JS, а здесь только дизайн */
         @media print {
             @page { size: A4 portrait; margin: 10mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
             
-            /* Стили для таблицы руководителя */
             #managerTable { width: 100%; border-collapse: collapse; margin-top: 10mm; direction: rtl; }
             #managerTable th, #managerTable td { border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; color: #000; }
             #managerTable th { background-color: #e5e7eb !important; font-weight: bold; }
             #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; }
 
-            /* Стили для карточек */
             .print-page { width: 100%; height: 275mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
             .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 10px; height: 30px; }
             .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; height: calc(100% - 40px); }
@@ -79,12 +76,10 @@
     <div id="mainApp" class="hidden max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-full">
         
         <div id="noPrintUI">
-            
             <div id="unprintedAlertBanner" class="hidden mb-6">
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     <button onclick="toggleBannerDetails()" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200 outline-none">
-                        <div class="flex items-center gap-3 font-bold text-gray-800" id="bannerSummaryText">
-                            </div>
+                        <div class="flex items-center gap-3 font-bold text-gray-800" id="bannerSummaryText"></div>
                         <i id="bannerChevron" class="fas fa-chevron-down text-gray-500 transition-transform duration-300"></i>
                     </button>
                     <div id="bannerDetails" class="hidden p-4 bg-white text-sm">
@@ -151,7 +146,6 @@
         </table>
 
         <div id="printTasksContainer" style="display: none;"></div>
-
     </div>
 
     <script>
@@ -275,6 +269,30 @@
             }
         }
 
+        // === НОВАЯ ФУНКЦИЯ: ОПЕРАТИВНЫЙ ПЕРЕНОС МЕЖДУ ЛИСТАМИ (ТАБАМИ) ===
+        async function moveTask(srcSheet, dt, rm, df, realIdx, tgtSheet) {
+            if (!tgtSheet) return;
+            if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) {
+                document.querySelector(`#task-card-${realIdx} select`).value = "";
+                return;
+            }
+            document.getElementById('loader').classList.remove('hidden');
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: srcSheet, targetSheet: tgtSheet, room: rm, defect: df })
+                });
+                const out = await res.json();
+                if(out.status === "success") {
+                    // Исключаем задачу из локального массива, и она мгновенно исчезает с экрана
+                    allTasks = allTasks.filter(t => !(t.sheet === srcSheet && t.dateStr === dt && t.room == rm && t.defect === df));
+                    if(fpInstance) fpInstance.redraw();
+                    renderTasks();
+                }
+            } catch(e) { console.error(e); }
+            document.getElementById('loader').classList.add('hidden');
+        }
+
         function renderTasks() {
             const screen = document.getElementById('screenTasksContainer');
             const tbody = document.getElementById('managerTableBody');
@@ -286,7 +304,6 @@
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
             let now = new Date();
 
-            // ИСПРАВЛЕНО: Список отделений теперь формируется по ВСЕМ задачам выбранной даты, без фильтра по текущей вкладке
             let tasksForDeptFilter = allTasks; 
             if(fDate) {
                 tasksForDeptFilter = tasksForDeptFilter.filter(t => {
@@ -303,7 +320,6 @@
             activeDepts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
             if (activeDepts.includes(previousValue)) { sel.value = previousValue; }
 
-            // Фильтрация текущей вкладки для вывода
             let filtered = allTasks.filter(t => t.sheet === currentTab);
             if(fDept !== "ALL") filtered = filtered.filter(t => t.dept === fDept);
             if(fDate) {
@@ -314,11 +330,8 @@
                 });
             }
             
-            // Сбор данных для умного сворачиваемого баннера
-            let unprintedList = [];
-            let overdueList = [];
-            let unprintedTaskCount = 0;
-            let overdueTaskCount = 0;
+            let unprintedList = []; let overdueList = [];
+            let unprintedTaskCount = 0; let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
                 const tKey = makeTaskKey(t);
@@ -348,47 +361,26 @@
             const bannerTextZone = document.getElementById('unprintedAlertText');
 
             if (unprintedTaskCount > 0 || overdueTaskCount > 0) {
-                // Создаем короткую сводку для шапки
-                let summaryHTML = `<i class="fas fa-exclamation-triangle text-amber-500 text-lg"></i> <span class="hidden md:inline">שים לב:</span> `;
-                if(unprintedTaskCount > 0) summaryHTML += `<span class="text-amber-700">${unprintedTaskCount} תקלות להדפסה</span>`;
+                let summaryHTML = `<i class="fas fa-exclamation-triangle text-amber-500 text-lg"></i> <span>סיכום אזהרות:</span> `;
+                if(unprintedTaskCount > 0) summaryHTML += `<span class="text-amber-700 font-black">${unprintedTaskCount} להדפסה</span>`;
                 if(unprintedTaskCount > 0 && overdueTaskCount > 0) summaryHTML += `<span class="mx-2 text-gray-300">|</span>`;
-                if(overdueTaskCount > 0) summaryHTML += `<span class="text-red-600">${overdueTaskCount} חריגות מעל 48 שעות!</span>`;
+                if(overdueTaskCount > 0) summaryHTML += `<span class="text-red-600 font-black">${overdueTaskCount} חריגות (48 שעות)!</span>`;
                 bannerSummary.innerHTML = summaryHTML;
 
-                // Создаем подробные списки с разделителями
                 let bannerHtml = `<div class="flex flex-col gap-4 text-right text-sm">`;
-                
                 if (unprintedList.length > 0) {
-                    bannerHtml += `
-                    <div>
-                        <p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p>
-                        <ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">
-                            ${unprintedList.map(item => `<li>${item}</li>`).join('')}
-                        </ul>
-                    </div>`;
+                    bannerHtml += `<div><p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${unprintedList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
-                
                 if (overdueList.length > 0) {
-                    bannerHtml += `
-                    <div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}">
-                        <p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p>
-                        <ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">
-                            ${overdueList.map(item => `<li>${item}</li>`).join('')}
-                        </ul>
-                    </div>`;
+                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
-                
-                bannerHtml += `</div>`;
-                bannerTextZone.innerHTML = bannerHtml;
+                bannerHtml += `</div>`; bannerTextZone.innerHTML = bannerHtml;
                 banner.classList.remove('hidden');
-            } else {
-                banner.classList.add('hidden');
-            }
+            } else { banner.classList.add('hidden'); }
 
             if(filtered.length === 0) { 
                 screen.innerHTML = '<p class="text-center p-10 text-gray-400 font-bold">אין משימות (Нет заданий)</p>'; 
-                updateSelectAllBtn();
-                return; 
+                updateSelectAllBtn(); return; 
             }
 
             filtered.forEach((task) => {
@@ -404,6 +396,7 @@
                 
                 const realIdx = allTasks.indexOf(task);
 
+                // ИЗМЕНЕНО: Рядом с кнопкой "בוצע" добавлен селектор изменения предназначения работы
                 screen.innerHTML += `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
@@ -417,19 +410,27 @@
                             ${isPrinted ? `
                                 <div class="flex items-center gap-2">
                                     <span class="in-progress-stamp text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider">בעבודה / В работе</span>
-                                    <button onclick="resetPrintStamp('${tKey}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
+                                    <button onclick="resetPrintStamp('${tKey}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo"></i></button>
                                 </div>
                             ` : ''}
                         </div>
                         <p class="font-bold mt-1">${task.defect}</p>
                         <p class="text-gray-500 text-sm">${task.comment || ""}</p>
                     </div>
-                    <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-3 rounded-xl font-bold">בוצע</button>
+                    <div class="flex flex-row md:flex-col items-center justify-center gap-2">
+                        <select onchange="moveTask('${safeSheet}', '${safeDateStr}', '${safeRoom}', '${safeDefect}', ${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer">
+                            <option value="" disabled selected>העבר צוות...</option>
+                            <option value="חשמל">חשמל (Электрика)</option>
+                            <option value="מיזוג_אוויר">מיזוג (Кондиционирование)</option>
+                            <option value="בינוי_ודלתות">בינוי (Строительство)</option>
+                            <option value="מיטות">מיטות (Кровати)</option>
+                            <option value="בטיחות">בטיחות (Безопасность)</option>
+                            <option value="ליקויים">כללי (Общие)</option>
+                        </select>
+                        <button id="btn-${realIdx}" onclick="closeTask('${safeSheet}','${safeDateStr}','${safeRoom}','${safeDefect}', ${realIdx}, '${tKey}')" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
+                    </div>
                 </div>`;
 
-                // Наполняем таблицу отчета
                 tbody.innerHTML += `<tr>
                     <td>${task.dateStr}</td>
                     <td>${task.inspector || "אנדרי"}</td>
@@ -477,12 +478,7 @@
             let printedKeys = JSON.parse(localStorage.getItem('hcl_printed_tasks') || "[]");
 
             for(let cb of checkboxes) {
-                const idx = cb.dataset.index;
-                const sh = cb.dataset.sheet;
-                const dt = cb.dataset.date;
-                const rm = cb.dataset.room;
-                const df = cb.dataset.defect;
-                const tKey = cb.dataset.key;
+                const idx = cb.dataset.index; const sh = cb.dataset.sheet; const dt = cb.dataset.date; const rm = cb.dataset.room; const df = cb.dataset.defect; const tKey = cb.dataset.key;
                 try {
                     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: sh, date: dt, room: rm, defect: df }) });
                     const out = await res.json();
@@ -498,33 +494,22 @@
             loadTasks();
         }
 
-        // ПУЛЕНЕПРОБИВАЕМАЯ ФУНКЦИЯ ПЕЧАТИ ОТЧЕТА РУКОВОДИТЕЛЯ
         function printManagerReport() { 
-            // 1. Скрываем экранный UI
             document.getElementById('noPrintUI').style.display = 'none';
-            
-            // 2. Показываем таблицу
             const printTitle = document.getElementById('printTitleManager');
             const printTable = document.getElementById('managerTable');
-            
             const selDate = document.getElementById('filterDate').value || 'כל התאריכים';
+            
             printTitle.innerText = `דוח מנהל - ${currentTab} (${selDate})`;
+            printTitle.style.display = 'block'; printTable.style.display = 'table';
             
-            printTitle.style.display = 'block';
-            printTable.style.display = 'table';
-            
-            // 3. Отправляем на печать с задержкой для браузера
             setTimeout(() => { 
                 window.print(); 
-                
-                // 4. Возвращаем всё обратно после закрытия окна печати
                 document.getElementById('noPrintUI').style.display = 'block';
-                printTitle.style.display = 'none';
-                printTable.style.display = 'none';
+                printTitle.style.display = 'none'; printTable.style.display = 'none';
             }, 300); 
         }
 
-        // ПУЛЕНЕПРОБИВАЕМАЯ ФУНКЦИЯ ПЕЧАТИ КАРТОЧЕК
         function printTasks() { 
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
@@ -533,15 +518,12 @@
             let tasksToPrint = [];
 
             checkboxes.forEach(cb => {
-                const realIdx = parseInt(cb.dataset.index);
-                const task = allTasks[realIdx];
+                const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
                     const tKey = cb.dataset.key;
                     if (!printedKeys.includes(tKey)) { printedKeys.push(tKey); }
-                    
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון";
-                    const img = fixImageUrl(task.photo);
-                    const dDate = task.dateStr.split(" ")[0];
+                    const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     tasksToPrint.push({...task, actT, img, dDate});
                 }
             });
@@ -550,8 +532,7 @@
             let groups = {};
             tasksToPrint.forEach(task => {
                 let key = `${task.dept}|${task.dDate}`;
-                if(!groups[key]) groups[key] = [];
-                groups[key].push(task);
+                if(!groups[key]) groups[key] = []; groups[key].push(task);
             });
 
             const printContainer = document.getElementById('printTasksContainer');
@@ -569,25 +550,20 @@
                                 <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
                                 <div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div>
                             </div>
-                            <div class="signature-box"><span>שם: _________</span><span>תאריך: _________</span><span>חתימה: _________</span></div>
+                            <div class="signature-box"><span>שם: _________</span><span>תаריך: _________</span><span>חתימה: _________</span></div>
                         </div>`;
                     });
                     printContainer.innerHTML += page + `</div></div>`;
                 }
             }
 
-            // 1. Скрываем UI
             document.getElementById('noPrintUI').style.display = 'none';
-            // 2. Показываем карточки
             printContainer.style.display = 'block';
             
             setTimeout(() => { 
                 window.print(); 
-                
-                // 3. Возвращаем UI обратно
                 document.getElementById('noPrintUI').style.display = 'block';
-                printContainer.style.display = 'none';
-                renderTasks(); 
+                printContainer.style.display = 'none'; renderTasks(); 
             }, 300); 
         }
     </script>
