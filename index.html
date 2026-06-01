@@ -40,9 +40,11 @@
             #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; }
 
             .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
-            .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 30px; }
+            .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center;}
+            .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
             
-            .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 40px); }
+            .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 50px); }
+            
             .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
             .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
             .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
@@ -71,6 +73,22 @@
         <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעדכן נתונים...</p></div>
     </div>
 
+    <div id="workersModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-black text-gray-800"><i class="fas fa-users-cog text-indigo-600 ml-2"></i>ניהול רשימת עובדים</h3>
+                <button onclick="closeWorkersModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="newWorkerName" placeholder="שם עובד חדש" class="flex-grow p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="addWorkerToList()" class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold hover:bg-indigo-500"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="workersListZone" class="flex-grow overflow-y-auto space-y-2 mb-4 pr-1">
+                </div>
+            <button onclick="saveWorkersToServer()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-save ml-2"></i>שמור שינויים בטבלה</button>
+        </div>
+    </div>
+
     <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 opacity-0 invisible">
         <i class="fas fa-arrow-up text-lg"></i>
     </button>
@@ -93,17 +111,21 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4">
                     <h1 class="text-3xl font-black text-gray-800 mb-4 md:mb-0">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
-                    <div class="flex gap-2 flex-wrap justify-center">
-                        <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
-                        <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
+                    <div class="flex gap-2 flex-wrap justify-center items-center">
+                        <button onclick="openWorkersModal()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-users ml-2"></i>ניהול עובדים</button>
+                        <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
+                        <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
                         
-                        <div class="flex items-center bg-orange-50 border border-orange-200 rounded-xl overflow-hidden shadow">
-                            <select id="printLang" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none cursor-pointer text-sm">
+                        <div class="flex items-center bg-orange-50 border border-orange-200 rounded-xl overflow-hidden shadow flex-wrap md:flex-nowrap">
+                            <select id="printWorker" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none border-l border-orange-200 text-sm max-w-[140px]">
+                                <option value="">בחר עובד... (Без мастера)</option>
+                            </select>
+                            <select id="printLang" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none text-sm">
                                 <option value="he">🇮🇱 עברית</option>
                                 <option value="ru">🇷🇺 Русский</option>
                                 <option value="ar">🇦🇪 العربية</option>
                             </select>
-                            <button onclick="printTasks()" class="bg-orange-600 text-white px-4 py-2 font-bold hover:bg-orange-500 transition-colors border-r border-orange-700">
+                            <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 font-bold hover:bg-orange-500 transition-colors">
                                 <i class="fas fa-print ml-2"></i>הדפס
                             </button>
                         </div>
@@ -122,7 +144,7 @@
                     </div>
                     <div class="flex-1">
                         <label class="block text-sm font-bold text-gray-500 mb-1">מתאריך</label>
-                        <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תאריך">
+                        <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תาריך">
                     </div>
                     <div class="flex items-end">
                         <button onclick="resetFilters()" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl font-bold">נקה סינון</button>
@@ -164,6 +186,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         let allTasks = [];
+        let workersPool = []; // Локальный массив пула сотрудников
         let currentTab = "חשמל";
         let fpInstance = null;
 
@@ -192,6 +215,7 @@
                     if (hasTasksOnDay) { dayElem.classList.add("has-tasks-dot"); }
                 }
             });
+            loadSettings(); // Загружаем категории и пул сотрудников при старте
         });
 
         function showLoader(text = "מעדכן נתונים...") {
@@ -199,6 +223,79 @@
             document.getElementById('loader').classList.remove('hidden');
         }
         function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
+
+        // ЗАГРУЗКА НАСТРОЕК (Пул сотрудников)
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API_URL}?action=getSettings`);
+                const data = await res.json();
+                workersPool = data.workers || [];
+                updateWorkersSelectUI();
+            } catch(e) { console.error("Ошибка загрузки настроек:", e); }
+        }
+
+        // Обновление выпадающего списка выбора мастера
+        function updateWorkersSelectUI() {
+            const sel = document.getElementById('printWorker');
+            sel.innerHTML = '<option value="">בחר עובד... (Без мастера)</option>';
+            workersPool.forEach(w => {
+                sel.innerHTML += `<option value="${w}">${w}</option>`;
+            });
+        }
+
+        // МОДAЛЬНОЕ ОКНО: Показ списка
+        function openWorkersModal() {
+            document.getElementById('workersModal').classList.remove('hidden');
+            renderWorkersListUI();
+        }
+        function closeWorkersModal() { document.getElementById('workersModal').classList.add('hidden'); }
+
+        function renderWorkersListUI() {
+            const zone = document.getElementById('workersListZone');
+            zone.innerHTML = '';
+            if(workersPool.length === 0) {
+                zone.innerHTML = '<p class="text-center text-gray-400 p-4">אין עובדים ברשימה</p>';
+                return;
+            }
+            workersPool.forEach((w, idx) => {
+                zone.innerHTML += `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <span class="font-bold text-gray-700">${w}</span>
+                    <button onclick="removeWorkerFromList(${idx})" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt"></i></button>
+                </div>`;
+            });
+        }
+
+        function addWorkerToList() {
+            const inp = document.getElementById('newWorkerName');
+            const name = inp.value.trim();
+            if(!name) return;
+            if(workersPool.includes(name)) { alert("עובד כבר קיים ברשימה!"); return; }
+            workersPool.push(name);
+            inp.value = '';
+            renderWorkersListUI();
+        }
+
+        function removeWorkerFromList(idx) {
+            workersPool.splice(idx, 1);
+            renderWorkersListUI();
+        }
+
+        async function saveWorkersToServer() {
+            showLoader("שומר עובדים...");
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "SAVE_WORKERS", workers: workersPool })
+                });
+                const out = await res.json();
+                if(out.status === "success") {
+                    updateWorkersSelectUI();
+                    closeWorkersModal();
+                }
+            } catch(e) { console.error(e); }
+            hideLoader();
+        }
 
         function checkPin() {
             if(document.getElementById('pinCode').value === "1234") { 
@@ -214,6 +311,12 @@
             if(url.includes('id=')) id = url.split('id=')[1].split('&')[0];
             else if(url.includes('/d/')) id = url.split('/d/')[1].split('/')[0];
             return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
+        }
+
+        function escapeStr(str) { return String(str || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
+
+        function makeTaskKey(task) {
+            return `${task.sheet}_${task.dateStr}_${task.room}_${task.defect}`.replace(/\s+/g, '_');
         }
 
         function toggleBannerDetails() {
@@ -252,7 +355,6 @@
             renderTasks(); 
         }
 
-        // ИСПРАВЛЕНО: Фронтенд теперь ищет задачу по её индексу
         async function resetPrintStamp(realIdx) {
             const task = allTasks[realIdx];
             if(!confirm("לבטל את סטטוס 'בעבודה' למשימה זו?")) return;
@@ -267,27 +369,26 @@
         }
 
         function toggleSelectAll() {
-            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
-            if (checkboxes.length === 0) return;
-            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            checkboxes.forEach(cb => cb.checked = anyUnchecked);
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
+            const total = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            const allChecked = (checkboxes.length === total.length);
+            total.forEach(cb => cb.checked = !allChecked);
             updateSelectAllBtn();
         }
 
         function updateSelectAllBtn() {
-            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
+            const total = document.querySelectorAll('.task-checkbox:not(:disabled)');
             const btn = document.getElementById('selectAllBtn');
-            if(!btn || checkboxes.length === 0) return;
-            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            if (anyUnchecked) { btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`; } 
-            else { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; }
+            if(!btn || total.length === 0) return;
+            if (checkboxes.length === total.length) { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; } 
+            else { btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`; }
         }
 
-        // ИСПРАВЛЕНО: Теперь передаем комментарий при переносе задачи
         async function moveTask(realIdx, tgtSheet) {
             const task = allTasks[realIdx];
             if (!tgtSheet) return;
-            if (!confirm(`לשים לב: להעביר משימה זו לצוות אחר?`)) { document.querySelector(`#task-card-${realIdx} select`).value = ""; return; }
+            if (!confirm(`Anas! לגרור משימה זו לצוות אחר?`)) { document.querySelector(`#task-card-${realIdx} select`).value = ""; return; }
             showLoader("מעביר...");
             try {
                 const res = await fetch(API_URL, {
@@ -343,7 +444,6 @@
 
             allTasks.forEach(t => {
                 const isPrinted = (t.status === "בעבודה"); 
-                
                 const p = t.dateStr.split(" ")[0].split("/");
                 const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
                 const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
@@ -355,7 +455,6 @@
                     let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
                     if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr);
                 }
-
                 if (diffHours >= 48) {
                     overdueTaskCount++;
                     let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
@@ -394,18 +493,19 @@
                 const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                 const img = fixImageUrl(task.photo);
                 const isPrinted = (task.status === "בעבודה"); 
-                
+                const cleanSheetName = escapeStr(task.sheet).replace(/_/g, ' ');
                 const realIdx = allTasks.indexOf(task);
 
-                // ИСПРАВЛЕНО: Инлайновые обработчики теперь принимают только realIdx
                 screen.innerHTML += `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
-                        <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" 
-                               data-index="${realIdx}" onchange="updateSelectAllBtn()">
+                        <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" data-index="${realIdx}" onchange="updateSelectAllBtn()">
                     </div>
                     <img src="${img}" class="w-24 h-24 object-cover rounded-xl border" onerror="this.src='https://placehold.co/100x100?text=No+Photo'">
                     <div class="flex-grow pr-10 md:pr-0">
+                        <div class="inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black mb-2 border border-blue-200 shadow-sm">
+                            <i class="fas fa-users ml-1"></i> צוות נוכחי: ${cleanSheetName}
+                        </div>
                         <div class="flex items-center gap-3">
                             <h3 class="text-xl font-bold">${task.dept} | חדר: ${task.room} <span class="text-sm font-normal px-2 bg-gray-100 rounded">${actT}</span></h3>
                             ${isPrinted ? `
@@ -442,11 +542,9 @@
                     <td>${isPrinted ? "בעבודה" : "פתוח"}</td>
                 </tr>`;
             });
-
             updateSelectAllBtn();
         }
 
-        // ИСПРАВЛЕНО: Закрытие передает комментарий в бэкенд
         async function closeTask(realIdx) {
             const task = allTasks[realIdx];
             if(!confirm("לסגור את המשימה?")) return;
@@ -456,11 +554,9 @@
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
                 const out = await res.json();
                 if(out.status === "success") {
-                    document.getElementById(`task-card-${realIdx}`).style.opacity="0.3";
-                    b.innerHTML = "סגור ✅";
+                    document.getElementById(`task-card-${realIdx}`).style.opacity="0.3"; b.innerHTML = "סגור ✅";
                     const cb = document.querySelector(`.task-checkbox[data-index="${realIdx}"]`);
                     if(cb) { cb.checked = false; cb.disabled = true; }
-                    
                     allTasks = allTasks.filter(t => t !== task);
                     if(fpInstance) fpInstance.redraw();
                     setTimeout(renderTasks, 500);
@@ -472,19 +568,16 @@
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("בחר לפחות משימה אחת!"); return; }
             if(!confirm(`לסגור ${checkboxes.length} משימות?`)) return;
-            
             showLoader("סוגר משימות...");
             for(let cb of checkboxes) {
                 const task = allTasks[cb.dataset.index];
                 try {
-                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
-                    const out = await res.json();
-                    if(out.status === "success") { allTasks = allTasks.filter(t => t !== task); }
+                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
+                    allTasks = allTasks.filter(t => t !== task);
                 } catch(e) { console.error(e); }
             }
             if(fpInstance) fpInstance.redraw();
-            hideLoader();
-            renderTasks();
+            hideLoader(); renderTasks();
         }
 
         function printManagerReport() { 
@@ -492,36 +585,28 @@
             const printTitle = document.getElementById('printTitleManager');
             const printTable = document.getElementById('managerTable');
             const selDate = document.getElementById('filterDate').value || 'כל התאריכים';
-            
             printTitle.innerText = `דוח מנהל - ${currentTab} (${selDate})`;
             printTitle.style.display = 'block'; printTable.style.display = 'table';
-            
-            setTimeout(() => { 
-                window.print(); 
-                document.getElementById('noPrintUI').style.display = 'block';
-                printTitle.style.display = 'none'; printTable.style.display = 'none';
-            }, 300); 
+            setTimeout(() => { window.print(); document.getElementById('noPrintUI').style.display = 'block'; printTitle.style.display = 'none'; printTable.style.display = 'none'; }, 300); 
         }
 
-        // ИСПРАВЛЕНО: Печать отправляет комментарии для маркировки в БД
+        // === ПЕЧАТЬ С ПОДДЕРЖКОЙ ВЫБОРА МАСТЕРА ===
         async function printTasks() { 
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
 
             const targetLang = document.getElementById('printLang').value; 
-            let tasksToPrint = [];
-            let tasksToUpdateOnServer = [];
-            let translationPayload = [];
+            const chosenWorker = document.getElementById('printWorker').value; // Читаем выбранного мастера
+            
+            let tasksToPrint = []; let tasksToUpdateOnServer = []; let translationPayload = [];
 
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
                     if (task.status !== "בעבודה") { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "" }); }
-                    
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                     const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     let printTask = {...task, actT, img, dDate, id: realIdx};
-                    
                     if (targetLang !== 'he') { translationPayload.push({ id: realIdx, defect: task.defect, comment: task.comment, actT: actT }); }
                     tasksToPrint.push(printTask);
                 }
@@ -534,29 +619,28 @@
                 let loadLang = targetLang === 'ru' ? "מתרגם לרוסית..." : "מתרגם לערבית...";
                 showLoader(loadLang);
                 try {
-                    const res = await fetch(API_URL, {
-                        method: 'POST', body: JSON.stringify({ action: "TRANSLATE_TASKS", targetLang: targetLang, tasks: translationPayload })
-                    });
+                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TRANSLATE_TASKS", targetLang: targetLang, tasks: translationPayload }) });
                     const transData = await res.json();
-                    
                     if (transData.status === "success" && transData.translations) {
                         transData.translations.forEach(transItem => {
                             let matchTask = tasksToPrint.find(t => t.id === transItem.id);
                             if (matchTask) { matchTask.defect = transItem.defect; matchTask.comment = transItem.comment; matchTask.actT = transItem.actT; }
                         });
-                        printLabels = transData.translations[0].labels; 
-                        textDirection = (targetLang === 'ru') ? "ltr" : "rtl"; 
+                        printLabels = transData.translations[0].labels; textDirection = (targetLang === 'ru') ? "ltr" : "rtl"; 
                     }
-                } catch (e) { console.error("Ошибка перевода", e); alert("שגיאה בתרגום. יודפס בעברית."); }
+                } catch (e) { console.error(e); }
                 hideLoader();
             }
 
             if (tasksToUpdateOnServer.length > 0) {
                 showLoader("מכין להדפסה...");
-                try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer }) }); } 
-                catch(e) { console.error(e); }
+                try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer }) }); } catch(e) {}
                 hideLoader();
             }
+
+            // ШТАМП ВРЕМЕНИ ПЕЧАТИ
+            const printNow = new Date();
+            const printNowStr = printNow.toLocaleDateString('en-GB') + ' ' + printNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
             let groups = {};
             tasksToPrint.forEach(task => {
@@ -571,9 +655,17 @@
                 let g = groups[key];
                 for(let i=0; i<g.length; i+=4) {
                     let chunk = g.slice(i, i+4);
-                    let page = `<div class="print-page"><div class="print-page-header">צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך: ${g[0].dDate}</div><div class="print-cards-grid">`;
+                    let page = `<div class="print-page">
+                        <div class="print-page-header">
+                            <div>צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך ביקורת: ${g[0].dDate}</div>
+                            <div class="print-page-header-sub">הודפס בתאריך: ${printNowStr}</div>
+                        </div>
+                        <div class="print-cards-grid">`;
                     
                     chunk.forEach(t => {
+                        // Если мастер выбран — впечатываем его имя, иначе оставляем пустую линию
+                        let nameVal = chosenWorker ? `<strong>${chosenWorker}</strong>` : "_________";
+                        
                         page += `
                         <div class="print-card" dir="${textDirection}">
                             <div class="print-card-top"><span class="font-black text-xl">${printLabels.room} ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
@@ -585,7 +677,7 @@
                                 </div>
                             </div>
                             <div class="signature-box" dir="${textDirection}">
-                                <span>${printLabels.name} _________</span>
+                                <span>${printLabels.name} ${nameVal}</span>
                                 <span>${printLabels.date} _________</span>
                                 <span>${printLabels.sign} _________</span>
                             </div>
@@ -597,13 +689,7 @@
 
             document.getElementById('noPrintUI').style.display = 'none';
             printContainer.style.display = 'block';
-            
-            setTimeout(() => { 
-                window.print(); 
-                document.getElementById('noPrintUI').style.display = 'block';
-                printContainer.style.display = 'none'; 
-                loadTasks(); 
-            }, 300); 
+            setTimeout(() => { window.print(); document.getElementById('noPrintUI').style.display = 'block'; printContainer.style.display = 'none'; loadTasks(); }, 300); 
         }
     </script>
 </body>
