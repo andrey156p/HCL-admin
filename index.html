@@ -59,6 +59,22 @@
 </head>
 <body class="text-gray-800">
 
+    <div id="toastContainer" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <div id="customConfirmModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 transition-all duration-300 opacity-0">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-all duration-300 text-center">
+            <div id="confirmIconContainer" class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h3 id="confirmTitle" class="text-xl font-black text-gray-800 mb-2"></h3>
+            <p id="confirmMessage" class="text-gray-500 font-medium mb-6 text-sm leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button id="confirmCancelBtn" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold transition-colors">ביטול</button>
+                <button id="confirmSuccessBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors shadow-md">אישור</button>
+            </div>
+        </div>
+    </div>
+
     <div id="loginScreen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
             <i class="fas fa-lock text-indigo-600 text-5xl mb-4"></i>
@@ -70,7 +86,7 @@
     </div>
 
     <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center">
-        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעדכן נתונים...</p></div>
+        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">معדכן נתונים...</p></div>
     </div>
 
     <div id="workersModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
@@ -83,8 +99,7 @@
                 <input type="text" id="newWorkerName" placeholder="שם עובד חדש" class="flex-grow p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500">
                 <button onclick="addWorkerToList()" class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold hover:bg-indigo-500"><i class="fas fa-plus"></i></button>
             </div>
-            <div id="workersListZone" class="flex-grow overflow-y-auto space-y-2 mb-4 pr-1">
-                </div>
+            <div id="workersListZone" class="flex-grow overflow-y-auto space-y-2 mb-4 pr-1"></div>
             <button onclick="saveWorkersToServer()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-save ml-2"></i>שמור שינויים בטבלה</button>
         </div>
     </div>
@@ -94,7 +109,6 @@
     </button>
 
     <div id="mainApp" class="hidden max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-full">
-        
         <div id="noPrintUI">
             <div id="unprintedAlertBanner" class="hidden mb-6">
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -144,7 +158,7 @@
                     </div>
                     <div class="flex-1">
                         <label class="block text-sm font-bold text-gray-500 mb-1">מתאריך</label>
-                        <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תาריך">
+                        <input type="text" id="filterDate" class="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none" placeholder="בחר תאריך">
                     </div>
                     <div class="flex items-end">
                         <button onclick="resetFilters()" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl font-bold">נקה סינון</button>
@@ -158,6 +172,7 @@
                 <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוי</button>
                 <button onclick="switchTab('מיטות')" id="tab-מיטות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיטות</button>
                 <button onclick="switchTab('בטיחות')" id="tab-בטיחות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בטיחות</button>
+                <button onclick="switchTab('ניקיון')" id="tab-ניקיון" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">ניקיון</button>
                 <button onclick="switchTab('ליקויים')" id="tab-ליקויים" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">כללי</button>
             </div>
 
@@ -186,9 +201,64 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         let allTasks = [];
-        let workersPool = []; // Локальный массив пула сотрудников
+        let workersPool = []; 
         let currentTab = "חשמל";
         let fpInstance = null;
+
+        // Элегантная кастомная система Toast-уведомлений
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-xl font-bold text-sm text-white flex items-center gap-3 transform translate-y-4 opacity-0 transition-all duration-300 pointer-events-auto border`;
+            
+            let icon = 'fa-check-circle';
+            if (type === 'success') { toast.classList.add('bg-emerald-600', 'border-emerald-500'); icon = 'fa-check-circle'; }
+            else if (type === 'error') { toast.classList.add('bg-rose-600', 'border-rose-500'); icon = 'fa-exclamation-circle'; }
+            else if (type === 'warning') { toast.classList.add('bg-amber-500', 'border-amber-400'); icon = 'fa-exclamation-triangle'; }
+            else { toast.classList.add('bg-indigo-600', 'border-indigo-500'); icon = 'fa-info-circle'; }
+
+            toast.innerHTML = `<i class="fas ${icon} text-lg"></i><span class="flex-grow text-right">${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => { toast.classList.remove('translate-y-4', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3500);
+        }
+
+        // Красивое диалоговое окно вместо стандартного window.confirm
+        function showCustomConfirm(title, message, onConfirm, iconClass = 'fa-question-circle', confirmText = 'אישור', cancelText = 'ביטול') {
+            const modal = document.getElementById('customConfirmModal');
+            const box = modal.querySelector('div');
+            
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            document.getElementById('confirmIconContainer').innerHTML = `<i class="fas ${iconClass}"></i>`;
+            
+            const sBtn = document.getElementById('confirmSuccessBtn');
+            const cBtn = document.getElementById('confirmCancelBtn');
+            sBtn.innerText = confirmText;
+            cBtn.innerText = cancelText;
+
+            if (iconClass.includes('trash') || iconClass.includes('exclamation') || iconClass.includes('warning')) {
+                sBtn.className = "flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold transition-colors shadow-md";
+                document.getElementById('confirmIconContainer').className = "w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4";
+            } else {
+                sBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-colors shadow-md";
+                document.getElementById('confirmIconContainer').className = "w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4";
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+
+            const close = () => {
+                modal.classList.add('opacity-0'); box.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            };
+            sBtn.onclick = () => { close(); if(onConfirm) onConfirm(); };
+            cBtn.onclick = () => { close(); };
+        }
 
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('backToTopBtn');
@@ -215,16 +285,15 @@
                     if (hasTasksOnDay) { dayElem.classList.add("has-tasks-dot"); }
                 }
             });
-            loadSettings(); // Загружаем категории и пул сотрудников при старте
+            loadSettings(); 
         });
 
-        function showLoader(text = "מעדכן נתונים...") {
+        function showLoader(text = "معדכן נתונים...") {
             document.getElementById('loaderText').innerText = text;
             document.getElementById('loader').classList.remove('hidden');
         }
         function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
 
-        // ЗАГРУЗКА НАСТРОЕК (Пул сотрудников)
         async function loadSettings() {
             try {
                 const res = await fetch(`${API_URL}?action=getSettings`);
@@ -234,16 +303,12 @@
             } catch(e) { console.error("Ошибка загрузки настроек:", e); }
         }
 
-        // Обновление выпадающего списка выбора мастера
         function updateWorkersSelectUI() {
             const sel = document.getElementById('printWorker');
             sel.innerHTML = '<option value="">בחר עובד... (Без мастера)</option>';
-            workersPool.forEach(w => {
-                sel.innerHTML += `<option value="${w}">${w}</option>`;
-            });
+            workersPool.forEach(w => { sel.innerHTML += `<option value="${w}">${w}</option>`; });
         }
 
-        // МОДAЛЬНОЕ ОКНО: Показ списка
         function openWorkersModal() {
             document.getElementById('workersModal').classList.remove('hidden');
             renderWorkersListUI();
@@ -270,7 +335,7 @@
             const inp = document.getElementById('newWorkerName');
             const name = inp.value.trim();
             if(!name) return;
-            if(workersPool.includes(name)) { alert("עובד כבר קיים ברשימה!"); return; }
+            if(workersPool.includes(name)) { showToast("עובד כבר קיים ברשימה!", "error"); return; }
             workersPool.push(name);
             inp.value = '';
             renderWorkersListUI();
@@ -292,6 +357,7 @@
                 if(out.status === "success") {
                     updateWorkersSelectUI();
                     closeWorkersModal();
+                    showToast("רשימת העובדים עודכנה", "success");
                 }
             } catch(e) { console.error(e); }
             hideLoader();
@@ -314,10 +380,6 @@
         }
 
         function escapeStr(str) { return String(str || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
-
-        function makeTaskKey(task) {
-            return `${task.sheet}_${task.dateStr}_${task.room}_${task.defect}`.replace(/\s+/g, '_');
-        }
 
         function toggleBannerDetails() {
             const details = document.getElementById('bannerDetails');
@@ -355,53 +417,57 @@
             renderTasks(); 
         }
 
-        async function resetPrintStamp(realIdx) {
+        function resetPrintStamp(realIdx) {
             const task = allTasks[realIdx];
-            if(!confirm("לבטל את סטטוס 'בעבודה' למשימה זו?")) return;
-            showLoader("מעדכן סטטוס...");
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "" }] })
-                });
-                await loadTasks(); 
-            } catch(e) { console.error(e); hideLoader(); }
+            showCustomConfirm("ביטול סטטוס", "לבטל את סטטוס 'בעבודה' למשימה זו?", async () => {
+                showLoader("מעדכן סטטוס...");
+                try {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }] })
+                    });
+                    await loadTasks(); 
+                    showToast("הסטטוס שונה ל'פתוח'", "success");
+                } catch(e) { console.error(e); hideLoader(); }
+            }, "fa-undo");
         }
 
         function toggleSelectAll() {
-            const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
-            const total = document.querySelectorAll('.task-checkbox:not(:disabled)');
-            const allChecked = (checkboxes.length === total.length);
-            total.forEach(cb => cb.checked = !allChecked);
+            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            if (checkboxes.length === 0) return;
+            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+            checkboxes.forEach(cb => cb.checked = anyUnchecked);
             updateSelectAllBtn();
         }
 
         function updateSelectAllBtn() {
-            const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
-            const total = document.querySelectorAll('.task-checkbox:not(:disabled)');
+            const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
             const btn = document.getElementById('selectAllBtn');
-            if(!btn || total.length === 0) return;
-            if (checkboxes.length === total.length) { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; } 
-            else { btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`; }
+            if(!btn || checkboxes.length === 0) return;
+            const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+            if (anyUnchecked) { btn.innerHTML = `<i class="fas fa-check-square ml-2"></i>בחר הכל`; } 
+            else { btn.innerHTML = `<i class="fas fa-minus-square ml-2"></i>בטל בחירה`; }
         }
 
-        async function moveTask(realIdx, tgtSheet) {
+        function moveTask(realIdx, tgtSheet) {
             const task = allTasks[realIdx];
             if (!tgtSheet) return;
-            if (!confirm(`Anas! לגרור משימה זו לצוות אחר?`)) { document.querySelector(`#task-card-${realIdx} select`).value = ""; return; }
-            showLoader("מעביר...");
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: task.sheet, targetSheet: tgtSheet, room: task.room, defect: task.defect, comment: task.comment || "" })
-                });
-                const out = await res.json();
-                if(out.status === "success") {
-                    allTasks = allTasks.filter(t => t !== task);
-                    if(fpInstance) fpInstance.redraw();
-                    renderTasks();
-                }
-            } catch(e) { console.error(e); }
-            hideLoader();
+            showCustomConfirm("העברת משימה", "לשים לב: להעביר משימה זו לצוות אחר?", async () => {
+                showLoader("מעביר...");
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: task.sheet, targetSheet: tgtSheet, room: task.room, defect: task.defect, comment: task.comment || "" })
+                    });
+                    const out = await res.json();
+                    if(out.status === "success") {
+                        allTasks = allTasks.filter(t => t !== task);
+                        if(fpInstance) fpInstance.redraw();
+                        renderTasks();
+                        showToast("המשימה הועברה בהצלחה", "success");
+                    }
+                } catch(e) { console.error(e); }
+                hideLoader();
+            }, "fa-exchange-alt");
         }
 
         function renderTasks() {
@@ -478,7 +544,7 @@
                     bannerHtml += `<div><p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${unprintedList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
                 if (overdueList.length > 0) {
-                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
+                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעл יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
                 bannerHtml += `</div>`; bannerTextZone.innerHTML = bannerHtml;
                 banner.classList.remove('hidden');
@@ -517,6 +583,7 @@
                         </div>
                         <p class="font-bold mt-1">${task.defect}</p>
                         <p class="text-gray-500 text-sm">${task.comment || ""}</p>
+                        <p class="text-xs text-gray-400 mt-1"><i class="fas fa-clock ml-1"></i>${task.dateStr}</p>
                     </div>
                     <div class="flex flex-row md:flex-col items-center justify-center gap-2">
                         <select onchange="moveTask(${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer">
@@ -526,9 +593,10 @@
                             <option value="בינוי_ודלתות">בינוי (Строительство)</option>
                             <option value="מיטות">מיטות (Кровати)</option>
                             <option value="בטיחות">בטיחות (Безопасность)</option>
+                            <option value="ניקיון">ניקיון (Уборка)</option>
                             <option value="ליקויים">כללי (Общие)</option>
                         </select>
-                        <button id="btn-${realIdx}" onclick="closeTask(${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
+                        <button id="btn-${realIdx}" onclick="closeSingleTask(${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
                     </div>
                 </div>`;
 
@@ -545,39 +613,52 @@
             updateSelectAllBtn();
         }
 
-        async function closeTask(realIdx) {
+        function closeSingleTask(realIdx) {
             const task = allTasks[realIdx];
-            if(!confirm("לסגור את המשימה?")) return;
-            const b = document.getElementById(`btn-${realIdx}`);
-            b.innerHTML = "..."; b.disabled = true;
-            try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
-                const out = await res.json();
-                if(out.status === "success") {
-                    document.getElementById(`task-card-${realIdx}`).style.opacity="0.3"; b.innerHTML = "סגור ✅";
-                    const cb = document.querySelector(`.task-checkbox[data-index="${realIdx}"]`);
-                    if(cb) { cb.checked = false; cb.disabled = true; }
-                    allTasks = allTasks.filter(t => t !== task);
-                    if(fpInstance) fpInstance.redraw();
-                    setTimeout(renderTasks, 500);
-                }
-            } catch(e) { b.disabled = false; b.innerHTML = "בוצע"; }
+            showCustomConfirm("סגירת משימה", "לסגור את המשימה הזו מהמערכת ומחיקת תמונה?", async () => {
+                const b = document.getElementById(`btn-${realIdx}`);
+                b.innerHTML = "..."; b.disabled = true;
+                try {
+                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
+                    const out = await res.json();
+                    if(out.status === "success") {
+                        document.getElementById(`task-card-${realIdx}`).style.opacity="0.3"; b.innerHTML = "סגור ✅";
+                        allTasks = allTasks.filter(t => t !== task);
+                        if(fpInstance) fpInstance.redraw();
+                        setTimeout(renderTasks, 400);
+                        showToast("המשימה נסגרה ונמחקה מהדרייב", "success");
+                    }
+                } catch(e) { b.disabled = false; b.innerHTML = "בוצע"; }
+            }, "fa-check-circle");
         }
 
-        async function closeSelectedTasks() {
+        // Защищенный метод группового закрытия карточек
+        function closeSelectedTasks() {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
-            if(checkboxes.length === 0) { alert("בחר לפחות משימה אחת!"); return; }
-            if(!confirm(`לסגור ${checkboxes.length} משימות?`)) return;
-            showLoader("סוגר משימות...");
-            for(let cb of checkboxes) {
-                const task = allTasks[cb.dataset.index];
-                try {
-                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
-                    allTasks = allTasks.filter(t => t !== task);
-                } catch(e) { console.error(e); }
-            }
-            if(fpInstance) fpInstance.redraw();
-            hideLoader(); renderTasks();
+            if(checkboxes.length === 0) { showToast("בחר לפחות משימה אחת!", "warning"); return; }
+            
+            showCustomConfirm("סגירת משימות", `לסגור את כל ${checkboxes.length} המשימות שנבחרו?`, async () => {
+                showLoader("סוגר משימות...");
+                
+                // Сначала жёстко собираем ссылки на объекты, защищаясь от смещения индексов массива!
+                const tasksToClose = [];
+                checkboxes.forEach(cb => {
+                    const idx = parseInt(cb.dataset.index);
+                    if (allTasks[idx]) tasksToClose.push(allTasks[idx]);
+                });
+
+                for(let task of tasksToClose) {
+                    try {
+                        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
+                        allTasks = allTasks.filter(t => t !== task);
+                    } catch(e) { console.error(e); }
+                }
+                
+                if(fpInstance) fpInstance.redraw();
+                hideLoader(); 
+                renderTasks();
+                showToast("כל המשימות הנבחרות נסגרו בהצלחה", "success");
+            }, "fa-check-double");
         }
 
         function printManagerReport() { 
@@ -590,20 +671,39 @@
             setTimeout(() => { window.print(); document.getElementById('noPrintUI').style.display = 'block'; printTitle.style.display = 'none'; printTable.style.display = 'none'; }, 300); 
         }
 
-        // === ПЕЧАТЬ С ПОДДЕРЖКОЙ ВЫБОРА МАСТЕРА ===
-        async function printTasks() { 
+        // Модуль проверки условий печати перед генерацией форм
+        function printTasks() {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
-            if(checkboxes.length === 0) { alert("אנא בחר כרטיסיות להדפסה!"); return; }
+            if(checkboxes.length === 0) { showToast("אנא בחר כרטיסיות להדפסה!", "warning"); return; }
 
             const targetLang = document.getElementById('printLang').value; 
-            const chosenWorker = document.getElementById('printWorker').value; // Читаем выбранного мастера
-            
+            const chosenWorker = document.getElementById('printWorker').value; 
+
+            // Умная валидация: предупреждаем если не выбран язык (отличный от дефолта) или мастер
+            if(!chosenWorker) {
+                showCustomConfirm(
+                    "הדפסה ללא מנהל עבודה", 
+                    "שימו לב: לא נבחר עובד לביצוע. הטפסים יודפסו עם שדה חתימה ריק. האם להמשיך להדפסה?",
+                    () => { executePrintSequence(checkboxes, targetLang, chosenWorker); },
+                    "fa-print",
+                    "הדפס בכל זאת",
+                    "חזור לבחור"
+                );
+            } else {
+                executePrintSequence(checkboxes, targetLang, chosenWorker);
+            }
+        }
+
+        // Изолированная цепочка выполнения печати
+        async function executePrintSequence(checkboxes, targetLang, chosenWorker) {
             let tasksToPrint = []; let tasksToUpdateOnServer = []; let translationPayload = [];
 
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
-                    if (task.status !== "בעבודה") { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "" }); }
+                    if (task.status !== "בעבודה") { 
+                        tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }); 
+                    }
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון";
                     const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     let printTask = {...task, actT, img, dDate, id: realIdx};
@@ -638,7 +738,6 @@
                 hideLoader();
             }
 
-            // ШТАМП ВРЕМЕНИ ПЕЧАТИ
             const printNow = new Date();
             const printNowStr = printNow.toLocaleDateString('en-GB') + ' ' + printNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
@@ -657,15 +756,13 @@
                     let chunk = g.slice(i, i+4);
                     let page = `<div class="print-page">
                         <div class="print-page-header">
-                            <div>צוות: ${currentTab} | מחלקה: ${g[0].dept} | תאריך ביקורת: ${g[0].dDate}</div>
+                            <div>צוות: ${currentTab.replace(/_/g, ' ')} | מחלקה: ${g[0].dept} | תאריך ביקורת: ${g[0].dDate}</div>
                             <div class="print-page-header-sub">הודפס בתאריך: ${printNowStr}</div>
                         </div>
                         <div class="print-cards-grid">`;
                     
                     chunk.forEach(t => {
-                        // Если мастер выбран — впечатываем его имя, иначе оставляем пустую линию
                         let nameVal = chosenWorker ? `<strong>${chosenWorker}</strong>` : "_________";
-                        
                         page += `
                         <div class="print-card" dir="${textDirection}">
                             <div class="print-card-top"><span class="font-black text-xl">${printLabels.room} ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
