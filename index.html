@@ -86,7 +86,7 @@
     </div>
 
     <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center">
-        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">معדכן נתונים...</p></div>
+        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעדכן נתונים...</p></div>
     </div>
 
     <div id="workersModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
@@ -125,24 +125,25 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4">
                     <h1 class="text-3xl font-black text-gray-800 mb-4 md:mb-0">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
+                    
                     <div class="flex gap-2 flex-wrap justify-center items-center">
                         <button onclick="openWorkersModal()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-users ml-2"></i>ניהול עובדים</button>
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-check-square ml-2"></i>בחר הכל</button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
                         
-                        <div class="flex items-center bg-orange-50 border border-orange-200 rounded-xl overflow-hidden shadow flex-wrap md:flex-nowrap">
-                            <select id="printWorker" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none border-l border-orange-200 text-sm max-w-[140px]">
-                                <option value="">בחר עובד... (Без мастера)</option>
-                            </select>
-                            <select id="printLang" class="bg-transparent text-orange-900 py-2 px-3 font-bold outline-none text-sm">
-                                <option value="he">🇮🇱 עברית</option>
-                                <option value="ru">🇷🇺 Русский</option>
-                                <option value="ar">🇦🇪 العربية</option>
-                            </select>
-                            <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 font-bold hover:bg-orange-500 transition-colors">
-                                <i class="fas fa-print ml-2"></i>הדפס
-                            </button>
-                        </div>
+                        <select id="printWorker" class="bg-orange-50 text-orange-900 border border-orange-200 py-2 px-3 font-bold rounded-xl outline-none text-sm shadow min-w-[140px]">
+                            <option value="">בחר עובד... (Без мастера)</option>
+                        </select>
+                        
+                        <select id="printLang" class="bg-orange-50 text-orange-900 border border-orange-200 py-2 px-3 font-bold rounded-xl outline-none text-sm shadow">
+                            <option value="he">🇮🇱 עברית</option>
+                            <option value="ru">🇷🇺 Русский</option>
+                            <option value="ar">🇦🇪 العربية</option>
+                        </select>
+                        
+                        <button onclick="printTasks()" class="bg-orange-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-500 transition-colors shadow">
+                            <i class="fas fa-print ml-2"></i>הדפס
+                        </button>
                         
                         <button onclick="printManagerReport()" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-table ml-2"></i>דוח מנהל</button>
                         <button onclick="loadTasks()" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-200"><i class="fas fa-sync-alt"></i></button>
@@ -205,7 +206,6 @@
         let currentTab = "חשמל";
         let fpInstance = null;
 
-        // Элегантная кастомная система Toast-уведомлений
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -227,7 +227,6 @@
             }, 3500);
         }
 
-        // Красивое диалоговое окно вместо стандартного window.confirm
         function showCustomConfirm(title, message, onConfirm, iconClass = 'fa-question-circle', confirmText = 'אישור', cancelText = 'ביטול') {
             const modal = document.getElementById('customConfirmModal');
             const box = modal.querySelector('div');
@@ -288,7 +287,7 @@
             loadSettings(); 
         });
 
-        function showLoader(text = "معדכן נתונים...") {
+        function showLoader(text = "מעדכן נתונים...") {
             document.getElementById('loaderText').innerText = text;
             document.getElementById('loader').classList.remove('hidden');
         }
@@ -544,7 +543,7 @@
                     bannerHtml += `<div><p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${unprintedList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
                 if (overdueList.length > 0) {
-                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעл יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
+                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
                 }
                 bannerHtml += `</div>`; bannerTextZone.innerHTML = bannerHtml;
                 banner.classList.remove('hidden');
@@ -632,7 +631,6 @@
             }, "fa-check-circle");
         }
 
-        // Защищенный метод группового закрытия карточек
         function closeSelectedTasks() {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { showToast("בחר לפחות משימה אחת!", "warning"); return; }
@@ -640,7 +638,6 @@
             showCustomConfirm("סגירת משימות", `לסגור את כל ${checkboxes.length} המשימות שנבחרו?`, async () => {
                 showLoader("סוגר משימות...");
                 
-                // Сначала жёстко собираем ссылки на объекты, защищаясь от смещения индексов массива!
                 const tasksToClose = [];
                 checkboxes.forEach(cb => {
                     const idx = parseInt(cb.dataset.index);
@@ -671,7 +668,6 @@
             setTimeout(() => { window.print(); document.getElementById('noPrintUI').style.display = 'block'; printTitle.style.display = 'none'; printTable.style.display = 'none'; }, 300); 
         }
 
-        // Модуль проверки условий печати перед генерацией форм
         function printTasks() {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { showToast("אנא בחר כרטיסיות להדפסה!", "warning"); return; }
@@ -679,7 +675,6 @@
             const targetLang = document.getElementById('printLang').value; 
             const chosenWorker = document.getElementById('printWorker').value; 
 
-            // Умная валидация: предупреждаем если не выбран язык (отличный от дефолта) или мастер
             if(!chosenWorker) {
                 showCustomConfirm(
                     "הדפסה ללא מנהל עבודה", 
@@ -694,7 +689,6 @@
             }
         }
 
-        // Изолированная цепочка выполнения печати
         async function executePrintSequence(checkboxes, targetLang, chosenWorker) {
             let tasksToPrint = []; let tasksToUpdateOnServer = []; let translationPayload = [];
 
@@ -786,7 +780,15 @@
 
             document.getElementById('noPrintUI').style.display = 'none';
             printContainer.style.display = 'block';
-            setTimeout(() => { window.print(); document.getElementById('noPrintUI').style.display = 'block'; printContainer.style.display = 'none'; loadTasks(); }, 300); 
+            
+            // Сброс выбора мастера после выполнения печати
+            setTimeout(() => { 
+                window.print(); 
+                document.getElementById('noPrintUI').style.display = 'block'; 
+                printContainer.style.display = 'none'; 
+                document.getElementById('printWorker').value = ""; 
+                loadTasks(); 
+            }, 300); 
         }
     </script>
 </body>
