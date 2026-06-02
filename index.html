@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; background-color: white;}
@@ -30,38 +32,36 @@
             width: 5px; height: 5px; background-color: #4f46e5; border-radius: 50%;
         }
 
-        /* Полное устранение флеша картинок на экране перед печатью */
-        @media screen {
-            #printTasksContainer { display: none !important; }
-        }
+        /* Полное устранение флеша картинок на экране. Контейнер скрыт по умолчанию. */
+        #printTasksContainer { display: none; }
 
         @media print {
             @page { size: A4 portrait; margin: 8mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
-            
             #noPrintUI { display: none !important; }
-            #managerTable { width: 100%; border-collapse: collapse; margin-top: 10mm; direction: rtl; }
-            #managerTable th, #managerTable td { border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; color: #000; }
-            #managerTable th { background-color: #e5e7eb !important; font-weight: bold; }
-            #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; }
-
-            .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; }
-            .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center;}
-            .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
-            
-            .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 50px); }
-            
-            .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; }
-            .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; }
-            .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
-            .print-photo { width: 68%; height: 100%; max-height: 380px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
-            .print-info { width: 32%; display: flex; flex-direction: column; }
-            .defect-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
-            .defect-comment { font-size: 14px; color: #374151; line-height: 1.2; }
-            
-            .signature-box { border-top: 2px dashed #000; margin-top: 8px; padding-top: 6px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
             #printTasksContainer { display: block !important; }
         }
+
+        /* ГЛОБАЛЬНЫЕ СТИЛИ ПЕЧАТИ (Вынесены из @media print, чтобы генератор PDF их видел) */
+        .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; background: white;}
+        .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center; color: black;}
+        .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
+        .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 50px); }
+        .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; background: white; color: black;}
+        .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; color: black;}
+        .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
+        .print-photo { width: 68%; height: 100%; max-height: 380px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
+        .print-info { width: 32%; display: flex; flex-direction: column; color: black;}
+        .defect-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
+        .defect-comment { font-size: 14px; color: #374151; line-height: 1.2; }
+        .signature-box { border-top: 2px dashed #000; margin-top: 8px; padding-top: 6px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: black;}
+        
+        #managerTable { width: 100%; border-collapse: collapse; margin-top: 10mm; direction: rtl; display: none; }
+        #managerTable.print-active { display: table; }
+        #managerTable th, #managerTable td { border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; color: #000; }
+        #managerTable th { background-color: #e5e7eb !important; font-weight: bold; }
+        #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; display: none; }
+        #printTitleManager.print-active { display: block; }
     </style>
 </head>
 <body class="text-gray-800">
@@ -93,7 +93,7 @@
     </div>
 
     <div id="loader" class="fixed inset-0 bg-white/90 hidden z-40 flex items-center justify-center">
-        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעдכן נתונים...</p></div>
+        <div class="flex flex-col items-center"><div class="loader mb-4"></div><p class="font-bold text-indigo-600" id="loaderText">מעדכן נתונים...</p></div>
     </div>
 
     <div id="workersModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
@@ -139,19 +139,23 @@
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 w-36 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow flex items-center justify-center"><i class="fas fa-check-square ml-2"></i><span>בחר הכל</span></button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
                         
-                        <div class="flex gap-2 items-center bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex gap-2 items-center bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-sm flex-wrap justify-center">
                             <select id="printWorker" class="bg-white text-orange-900 border border-gray-200 py-1.5 px-3 font-bold rounded-lg outline-none text-sm max-w-[140px]">
                                 <option value="">בחר עובד... (Без мастера)</option>
                             </select>
                             
                             <select id="printLang" class="bg-white text-orange-900 border border-gray-200 py-1.5 px-3 font-bold rounded-lg outline-none text-sm">
-                                <option value="he">🇮🇱 עברית</option>
-                                <option value="ru">🇷🇺 Русский</option>
-                                <option value="ar">🇦🇪 العربية</option>
+                                <option value="he">עברית (HE)</option>
+                                <option value="ru">Русский (RU)</option>
+                                <option value="ar">العربية (AR)</option>
                             </select>
                             
-                            <button onclick="printTasks()" class="bg-orange-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-orange-500 transition-colors shadow-sm">
+                            <button onclick="processOutput('print')" class="bg-orange-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-orange-500 transition-colors shadow-sm">
                                 <i class="fas fa-print ml-1"></i>הדפס
+                            </button>
+                            
+                            <button onclick="processOutput('pdf')" class="bg-red-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-red-500 transition-colors shadow-sm">
+                                <i class="fas fa-file-pdf ml-1"></i>PDF
                             </button>
                         </div>
                         
@@ -180,7 +184,7 @@
             <div class="flex bg-white rounded-2xl shadow-sm mb-6 overflow-hidden flex-wrap md:flex-nowrap border border-gray-200">
                 <button onclick="switchTab('חשמל')" id="tab-חשמל" class="tab-btn active flex-1 py-4 px-2 font-bold text-gray-500">חשמל</button>
                 <button onclick="switchTab('מיזוג_אוויר')" id="tab-מיזוג_אוויר" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיזוג</button>
-                <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוи</button>
+                <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוי</button>
                 <button onclick="switchTab('מיטות')" id="tab-מיטות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיטות</button>
                 <button onclick="switchTab('בטיחות')" id="tab-בטיחות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בטיחות</button>
                 <button onclick="switchTab('ניקיון')" id="tab-ניקיון" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">ניקיון</button>
@@ -190,8 +194,8 @@
             <div id="screenTasksContainer" class="space-y-4"></div>
         </div>
 
-        <div id="printTitleManager" style="display: none;"></div>
-        <table id="managerTable" style="display: none;">
+        <div id="printTitleManager"></div>
+        <table id="managerTable">
             <thead>
                 <tr>
                     <th>תאריך ושעה</th>
@@ -208,7 +212,6 @@
 
         <div id="printTasksContainer"></div>
     </div>
-
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         let allTasks = [];
@@ -216,7 +219,6 @@
         let currentTab = "חשמל";
         let fpInstance = null;
 
-        // Элегантная кастомная система Toast-уведомлений
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -238,7 +240,6 @@
             }, 3500);
         }
 
-        // Красивое диалоговое окно вместо стандартного window.confirm
         function showCustomConfirm(title, message, onConfirm, iconClass = 'fa-question-circle', confirmText = 'אישור', cancelText = 'ביטול') {
             const modal = document.getElementById('customConfirmModal');
             const box = modal.querySelector('div');
@@ -252,7 +253,7 @@
             sBtn.innerText = confirmText;
             cBtn.innerText = cancelText;
 
-            if (iconClass.includes('trash') || iconClass.includes('exclamation') || iconClass.includes('warning') || iconClass.includes('print')) {
+            if (iconClass.includes('trash') || iconClass.includes('exclamation') || iconClass.includes('warning') || iconClass.includes('pdf')) {
                 sBtn.className = "flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold transition-colors shadow-md";
                 document.getElementById('confirmIconContainer').className = "w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4";
             } else {
@@ -282,6 +283,7 @@
                 dateFormat: "Y-m-d",
                 defaultDate: new Date(),
                 allowInput: false,
+                disableMobile: true, // ИСПРАВЛЕНИЕ: Точки календаря теперь работают на телефонах
                 onChange: function() { renderTasks(); },
                 onDayCreate: function(dObj, dStr, fp, dayElem) {
                     if (!allTasks || allTasks.length === 0) return;
@@ -320,19 +322,13 @@
             workersPool.forEach(w => { sel.innerHTML += `<option value="${w}">${w}</option>`; });
         }
 
-        function openWorkersModal() {
-            document.getElementById('workersModal').classList.remove('hidden');
-            renderWorkersListUI();
-        }
+        function openWorkersModal() { document.getElementById('workersModal').classList.remove('hidden'); renderWorkersListUI(); }
         function closeWorkersModal() { document.getElementById('workersModal').classList.add('hidden'); }
 
         function renderWorkersListUI() {
             const zone = document.getElementById('workersListZone');
             zone.innerHTML = '';
-            if(workersPool.length === 0) {
-                zone.innerHTML = '<p class="text-center text-gray-400 p-4">אין עובדים ברשימה</p>';
-                return;
-            }
+            if(workersPool.length === 0) { zone.innerHTML = '<p class="text-center text-gray-400 p-4">אין עובדים ברשימה</p>'; return; }
             workersPool.forEach((w, idx) => {
                 zone.innerHTML += `
                 <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-200">
@@ -347,44 +343,29 @@
             const name = inp.value.trim();
             if(!name) return;
             if(workersPool.includes(name)) { showToast("עובד כבר קיים ברשימה!", "error"); return; }
-            workersPool.push(name);
-            inp.value = '';
-            renderWorkersListUI();
+            workersPool.push(name); inp.value = ''; renderWorkersListUI();
         }
 
-        function removeWorkerFromList(idx) {
-            workersPool.splice(idx, 1);
-            renderWorkersListUI();
-        }
+        function removeWorkerFromList(idx) { workersPool.splice(idx, 1); renderWorkersListUI(); }
 
         async function saveWorkersToServer() {
             showLoader("שומר עובדים...");
             try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "SAVE_WORKERS", workers: workersPool })
-                });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SAVE_WORKERS", workers: workersPool }) });
                 const out = await res.json();
-                if(out.status === "success") {
-                    updateWorkersSelectUI();
-                    closeWorkersModal();
-                    showToast("רשימת העובדים עודכנה", "success");
-                }
-            } catch(e) { console.error(e); }
-            hideLoader();
+                if(out.status === "success") { updateWorkersSelectUI(); closeWorkersModal(); showToast("רשימת העובדים עודכנה", "success"); }
+            } catch(e) { console.error(e); } hideLoader();
         }
 
         function checkPin() {
             if(document.getElementById('pinCode').value === "1234") { 
                 document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                loadTasks();
+                document.getElementById('mainApp').classList.remove('hidden'); loadTasks();
             } else { document.getElementById('pinError').classList.remove('hidden'); }
         }
 
         function fixImageUrl(url) {
-            if(!url) return "";
-            let id = "";
+            if(!url) return ""; let id = "";
             if(url.includes('id=')) id = url.split('id=')[1].split('&')[0];
             else if(url.includes('/d/')) id = url.split('/d/')[1].split('/')[0];
             return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
@@ -393,52 +374,36 @@
         function escapeStr(str) { return String(str || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
         function toggleBannerDetails() {
-            const details = document.getElementById('bannerDetails');
-            const chevron = document.getElementById('bannerChevron');
-            if(details.classList.contains('hidden')) {
-                details.classList.remove('hidden'); chevron.style.transform = 'rotate(180deg)';
-            } else {
-                details.classList.add('hidden'); chevron.style.transform = 'rotate(0deg)';
-            }
+            const details = document.getElementById('bannerDetails'); const chevron = document.getElementById('bannerChevron');
+            if(details.classList.contains('hidden')) { details.classList.remove('hidden'); chevron.style.transform = 'rotate(180deg)'; } 
+            else { details.classList.add('hidden'); chevron.style.transform = 'rotate(0deg)'; }
         }
 
         async function loadTasks() {
             showLoader();
             try {
                 const res = await fetch(`${API_URL}?action=getOpenTasks`);
-                const data = await res.json();
-                allTasks = data.tasks || [];
-                if(fpInstance) fpInstance.redraw();
-                renderTasks();
-            } catch(e) { console.error("Ошибка загрузки:", e); }
-            hideLoader();
+                const data = await res.json(); allTasks = data.tasks || [];
+                if(fpInstance) fpInstance.redraw(); renderTasks();
+            } catch(e) { console.error("Ошибка загрузки:", e); } hideLoader();
         }
 
         function switchTab(t) { 
             currentTab = t; 
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'bg-white')); 
             const targetTab = document.getElementById('tab-'+t) || document.getElementById('tab-ליקויים');
-            if(targetTab) targetTab.classList.add('active', 'bg-white'); 
-            renderTasks(); 
+            if(targetTab) targetTab.classList.add('active', 'bg-white'); renderTasks(); 
         }
 
-        function resetFilters() { 
-            document.getElementById('filterDept').value="ALL"; 
-            if(fpInstance) fpInstance.setDate(new Date());
-            renderTasks(); 
-        }
+        function resetFilters() { document.getElementById('filterDept').value="ALL"; if(fpInstance) fpInstance.setDate(new Date()); renderTasks(); }
 
         function resetPrintStamp(realIdx) {
             const task = allTasks[realIdx];
             showCustomConfirm("ביטול סטטוס", "לבטל את סטטוס 'בעבודה' למשימה זו?", async () => {
                 showLoader("מעדכן סטטוס...");
                 try {
-                    await fetch(API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }] })
-                    });
-                    await loadTasks(); 
-                    showToast("הסטטוס שונה ל'פתוח'", "success");
+                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: [{ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }] }) });
+                    await loadTasks(); showToast("הסטטוס שונה ל'פתוח'", "success");
                 } catch(e) { console.error(e); hideLoader(); }
             }, "fa-undo");
         }
@@ -447,8 +412,7 @@
             const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
             if (checkboxes.length === 0) return;
             const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            checkboxes.forEach(cb => cb.checked = anyUnchecked);
-            updateSelectAllBtn();
+            checkboxes.forEach(cb => cb.checked = anyUnchecked); updateSelectAllBtn();
         }
 
         function updateSelectAllBtn() {
@@ -456,16 +420,9 @@
             const btn = document.getElementById('selectAllBtn');
             if(!btn || checkboxes.length === 0) return;
             const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            const span = btn.querySelector('span');
-            const icon = btn.querySelector('i');
-            if (anyUnchecked) { 
-                if(span) span.innerText = "בחר הכל"; 
-                if(icon) icon.className = "fas fa-check-square ml-2";
-            } 
-            else { 
-                if(span) span.innerText = "בטל בחירה"; 
-                if(icon) icon.className = "fas fa-minus-square ml-2";
-            }
+            const span = btn.querySelector('span'); const icon = btn.querySelector('i');
+            if (anyUnchecked) { if(span) span.innerText = "בחר הכל"; if(icon) icon.className = "fas fa-check-square ml-2"; } 
+            else { if(span) span.innerText = "בטל בחירה"; if(icon) icon.className = "fas fa-minus-square ml-2"; }
         }
 
         function moveTask(realIdx, tgtSheet) {
@@ -474,28 +431,18 @@
             showCustomConfirm("העברת משימה", "לשים לב: להעביר משימה זו לצוות אחר?", async () => {
                 showLoader("מעביר...");
                 try {
-                    const res = await fetch(API_URL, {
-                        method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: task.sheet, targetSheet: tgtSheet, room: task.room, defect: task.defect, comment: task.comment || "" })
-                    });
+                    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MOVE_TASK", sourceSheet: task.sheet, targetSheet: tgtSheet, room: task.room, defect: task.defect, comment: task.comment || "" }) });
                     const out = await res.json();
-                    if(out.status === "success") {
-                        allTasks = allTasks.filter(t => t !== task);
-                        if(fpInstance) fpInstance.redraw();
-                        renderTasks();
-                        showToast("המשימה הועברה בהצלחה", "success");
-                    }
-                } catch(e) { console.error(e); }
-                hideLoader();
+                    if(out.status === "success") { allTasks = allTasks.filter(t => t !== task); if(fpInstance) fpInstance.redraw(); renderTasks(); showToast("המשימה הועברה בהצלחה", "success"); }
+                } catch(e) { console.error(e); } hideLoader();
             }, "fa-exchange-alt");
         }
 
         function renderTasks() {
-            const screen = document.getElementById('screenTasksContainer');
-            const tbody = document.getElementById('managerTableBody');
+            const screen = document.getElementById('screenTasksContainer'); const tbody = document.getElementById('managerTableBody');
             screen.innerHTML = ''; tbody.innerHTML = '';
             
-            const fDept = document.getElementById('filterDept').value;
-            const fDate = document.getElementById('filterDate').value;
+            const fDept = document.getElementById('filterDept').value; const fDate = document.getElementById('filterDate').value;
             let now = new Date();
 
             let tasksForDeptFilter = allTasks; 
@@ -508,8 +455,7 @@
             }
             const activeDepts = [...new Set(tasksForDeptFilter.map(t => t.dept))].filter(Boolean);
             
-            const sel = document.getElementById('filterDept');
-            const previousValue = sel.value;
+            const sel = document.getElementById('filterDept'); const previousValue = sel.value;
             sel.innerHTML = '<option value="ALL">כל המחלקות</option>';
             activeDepts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
             if (activeDepts.includes(previousValue)) { sel.value = previousValue; }
@@ -524,27 +470,16 @@
                 });
             }
             
-            let unprintedList = []; let overdueList = [];
-            let unprintedTaskCount = 0; let overdueTaskCount = 0;
+            let unprintedList = []; let overdueList = []; let unprintedTaskCount = 0; let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
                 const isPrinted = (t.status === "בעבודה"); 
-                const p = t.dateStr.split(" ")[0].split("/");
-                const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
+                const p = t.dateStr.split(" ")[0].split("/"); const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
                 const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
-                const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60);
-                const dateOnly = t.dateStr.split(" ")[0];
+                const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60); const dateOnly = t.dateStr.split(" ")[0];
 
-                if (!isPrinted) {
-                    unprintedTaskCount++;
-                    let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
-                    if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr);
-                }
-                if (diffHours >= 48) {
-                    overdueTaskCount++;
-                    let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`;
-                    if(!overdueList.includes(itemStr)) overdueList.push(itemStr);
-                }
+                if (!isPrinted) { unprintedTaskCount++; let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`; if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr); }
+                if (diffHours >= 48) { overdueTaskCount++; let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`; if(!overdueList.includes(itemStr)) overdueList.push(itemStr); }
             });
 
             const banner = document.getElementById('unprintedAlertBanner');
@@ -559,26 +494,16 @@
                 bannerSummary.innerHTML = summaryHTML;
 
                 let bannerHtml = `<div class="flex flex-col gap-4 text-right text-sm">`;
-                if (unprintedList.length > 0) {
-                    bannerHtml += `<div><p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${unprintedList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
-                }
-                if (overdueList.length > 0) {
-                    bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
-                }
-                bannerHtml += `</div>`; bannerTextZone.innerHTML = bannerHtml;
-                banner.classList.remove('hidden');
+                if (unprintedList.length > 0) { bannerHtml += `<div><p class="text-amber-900 font-bold mb-2 text-base border-b border-amber-200 pb-1"><i class="fas fa-print ml-2 text-amber-600"></i> ממתין להדפסה (לא יצא לעבודה):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${unprintedList.map(item => `<li>${item}</li>`).join('')}</ul></div>`; }
+                if (overdueList.length > 0) { bannerHtml += `<div class="${unprintedList.length > 0 ? 'border-t border-gray-200 pt-3' : ''}"><p class="text-red-800 font-bold mb-2 text-base border-b border-red-200 pb-1"><i class="fas fa-clock ml-2 text-red-600"></i> חריגת 48 שעות (פתוח מעל יומיים):</p><ul class="list-disc list-inside text-gray-700 space-y-1 pr-2">${overdueList.map(item => `<li>${item}</li>`).join('')}</ul></div>`; }
+                bannerHtml += `</div>`; bannerTextZone.innerHTML = bannerHtml; banner.classList.remove('hidden');
             } else { banner.classList.add('hidden'); }
 
-            if(filtered.length === 0) { 
-                screen.innerHTML = '<p class="text-center p-10 text-gray-400 font-bold">אין משימות (Нет заданий)</p>'; 
-                updateSelectAllBtn(); return; 
-            }
+            if(filtered.length === 0) { screen.innerHTML = '<p class="text-center p-10 text-gray-400 font-bold">אין משימות (Нет заданий)</p>'; updateSelectAllBtn(); return; }
 
             filtered.forEach((task) => {
-                const actT = task.actionType == 1 ? "החלפה" : "תיקון";
-                const img = fixImageUrl(task.photo);
-                const isPrinted = (task.status === "בעבודה"); 
-                const cleanSheetName = escapeStr(task.sheet).replace(/_/g, ' ');
+                const actT = task.actionType == 1 ? "החלפה" : "תיקון"; const img = fixImageUrl(task.photo);
+                const isPrinted = (task.status === "בעבודה"); const cleanSheetName = escapeStr(task.sheet).replace(/_/g, ' ');
                 const realIdx = allTasks.indexOf(task);
 
                 screen.innerHTML += `
@@ -624,15 +549,7 @@
                     </div>
                 </div>`;
 
-                tbody.innerHTML += `<tr>
-                    <td>${task.dateStr}</td>
-                    <td>${task.inspector || "אנדרי"}</td>
-                    <td>${task.dept}</td>
-                    <td>${task.room}</td>
-                    <td>${task.defect}</td>
-                    <td>${task.comment || ""}</td>
-                    <td>${isPrinted ? "בעבודה" : "פתוח"}</td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${task.dateStr}</td><td>${task.inspector || "אנדרי"}</td><td>${task.dept}</td><td>${task.room}</td><td>${task.defect}</td><td>${task.comment || ""}</td><td>${isPrinted ? "בעבודה" : "פתוח"}</td></tr>`;
             });
             updateSelectAllBtn();
         }
@@ -640,17 +557,13 @@
         function closeSingleTask(realIdx) {
             const task = allTasks[realIdx];
             showCustomConfirm("סגירת משימה", "לסגור את המשימה הזו מהמערכת ומחיקת תמונה?", async () => {
-                const b = document.getElementById(`btn-${realIdx}`);
-                b.innerHTML = "..."; b.disabled = true;
+                const b = document.getElementById(`btn-${realIdx}`); b.innerHTML = "..."; b.disabled = true;
                 try {
                     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
                     const out = await res.json();
                     if(out.status === "success") {
                         document.getElementById(`task-card-${realIdx}`).style.opacity="0.3"; b.innerHTML = "סגור ✅";
-                        allTasks = allTasks.filter(t => t !== task);
-                        if(fpInstance) fpInstance.redraw();
-                        setTimeout(renderTasks, 400);
-                        showToast("המשימה נסגרה ונמחקה מהדרייב", "success");
+                        allTasks = allTasks.filter(t => t !== task); if(fpInstance) fpInstance.redraw(); setTimeout(renderTasks, 400); showToast("המשימה נסגרה", "success");
                     }
                 } catch(e) { b.disabled = false; b.innerHTML = "בוצע"; }
             }, "fa-check-circle");
@@ -659,156 +572,100 @@
         function closeSelectedTasks() {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
             if(checkboxes.length === 0) { showToast("בחר לפחות משימה אחת!", "warning"); return; }
-            
             showCustomConfirm("סגירת משימות", `לסגור את כל ${checkboxes.length} המשימות שנבחרו?`, async () => {
                 showLoader("סוגר משימות...");
-                
-                const tasksToClose = [];
-                checkboxes.forEach(cb => {
-                    const idx = parseInt(cb.dataset.index);
-                    if (allTasks[idx]) tasksToClose.push(allTasks[idx]);
-                });
-
+                const tasksToClose = []; checkboxes.forEach(cb => { const idx = parseInt(cb.dataset.index); if (allTasks[idx]) tasksToClose.push(allTasks[idx]); });
                 for(let task of tasksToClose) {
-                    try {
-                        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) });
-                        allTasks = allTasks.filter(t => t !== task);
-                    } catch(e) { console.error(e); }
+                    try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "CLOSE_TASK", sheetName: task.sheet, date: task.dateStr, room: task.room, defect: task.defect, comment: task.comment || "" }) }); allTasks = allTasks.filter(t => t !== task); } catch(e) {}
                 }
-                
-                if(fpInstance) fpInstance.redraw();
-                hideLoader(); 
-                renderTasks();
-                showToast("כל המשימות הנבחרות נסגרו בהצלחה", "success");
+                if(fpInstance) fpInstance.redraw(); hideLoader(); renderTasks(); showToast("המשימות נסגרו", "success");
             }, "fa-check-double");
         }
 
         function printManagerReport() { 
-            const printTitle = document.getElementById('printTitleManager');
-            const printTable = document.getElementById('managerTable');
-            const selDate = document.getElementById('filterDate').value || 'כל התאריכים';
-            printTitle.innerText = `דוח מנהל - ${currentTab} (${selDate})`;
-            printTitle.style.display = 'block'; printTable.style.display = 'table';
-            setTimeout(() => { window.print(); printTitle.style.display = 'none'; printTable.style.display = 'none'; }, 300); 
+            const printTitle = document.getElementById('printTitleManager'); const printTable = document.getElementById('managerTable'); const selDate = document.getElementById('filterDate').value || 'כל התאריכים';
+            printTitle.innerText = `דוח מנהל - ${currentTab} (${selDate})`; printTitle.classList.add('print-active'); printTable.classList.add('print-active');
+            setTimeout(() => { window.print(); printTitle.classList.remove('print-active'); printTable.classList.remove('print-active'); }, 300); 
         }
 
-        function printTasks() {
+        function processOutput(mode) {
             const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
-            if(checkboxes.length === 0) { showToast("אנא בחר כרטיסיות להדפסה!", "warning"); return; }
+            if(checkboxes.length === 0) { showToast("אנא בחר כרטיסיות!", "warning"); return; }
 
             const targetLang = document.getElementById('printLang').value; 
             const chosenWorker = document.getElementById('printWorker').value; 
 
             if(!chosenWorker) {
-                showCustomConfirm(
-                    "הדפסה ללא מנהל עבודה", 
-                    "שימו לב: לא נבחר עобד לביצוע. הטפסים יודפסו עם שדה חתימה ריק. האם להמשיך להדפסה?",
-                    () => { executePrintSequence(checkboxes, targetLang, chosenWorker); },
-                    "fa-print",
-                    "הדפס בכל זאת",
-                    "חזור לבחור"
-                );
-            } else {
-                executePrintSequence(checkboxes, targetLang, chosenWorker);
-            }
+                showCustomConfirm("המשך ללא עובד", "לא נבחר עובד לביצוע. האם להמשיך להפקה?", () => { executeOutputSequence(checkboxes, targetLang, chosenWorker, mode); }, mode === 'pdf' ? "fa-file-pdf" : "fa-print", "המשך", "ביטול");
+            } else { executeOutputSequence(checkboxes, targetLang, chosenWorker, mode); }
         }
 
-        async function executePrintSequence(checkboxes, targetLang, chosenWorker) {
+        async function executeOutputSequence(checkboxes, targetLang, chosenWorker, mode) {
             let tasksToPrint = []; let tasksToUpdateOnServer = []; let translationPayload = [];
 
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
-                    if (task.status !== "בעבודה") { 
-                        tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }); 
-                    }
-                    const actT = task.actionType == 1 ? "החלפה" : "תיקון";
-                    const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
+                    if (task.status !== "בעבודה") { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }); }
+                    const actT = task.actionType == 1 ? "החלפה" : "תיקון"; const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     let printTask = {...task, actT, img, dDate, id: realIdx};
                     if (targetLang !== 'he') { translationPayload.push({ id: realIdx, defect: task.defect, comment: task.comment, actT: actT }); }
                     tasksToPrint.push(printTask);
                 }
             });
 
-            let printLabels = { room: "חדר: ", name: "שם: ", date: "תאריך: ", sign: "חתימה: " };
-            let textDirection = "rtl";
+            let printLabels = { room: "חדר: ", name: "שם: ", date: "תאריך: ", sign: "חתימה: " }; let textDirection = "rtl";
 
             if (targetLang !== 'he' && translationPayload.length > 0) {
-                let loadLang = targetLang === 'ru' ? "מתרגם לרוסית..." : "מתרגם לערבית...";
-                showLoader(loadLang);
+                showLoader(targetLang === 'ru' ? "מתרגם לרוסית..." : "מתרגם לערבית...");
                 try {
                     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "TRANSLATE_TASKS", targetLang: targetLang, tasks: translationPayload }) });
                     const transData = await res.json();
                     if (transData.status === "success" && transData.translations) {
-                        transData.translations.forEach(transItem => {
-                            let matchTask = tasksToPrint.find(t => t.id === transItem.id);
-                            if (matchTask) { matchTask.defect = transItem.defect; matchTask.comment = transItem.comment; matchTask.actT = transItem.actT; }
-                        });
+                        transData.translations.forEach(transItem => { let matchTask = tasksToPrint.find(t => t.id === transItem.id); if (matchTask) { matchTask.defect = transItem.defect; matchTask.comment = transItem.comment; matchTask.actT = transItem.actT; } });
                         printLabels = transData.translations[0].labels; textDirection = (targetLang === 'ru') ? "ltr" : "rtl"; 
                     }
-                } catch (e) { console.error(e); }
-                hideLoader();
+                } catch (e) { console.error(e); } hideLoader();
             }
 
-            if (tasksToUpdateOnServer.length > 0) {
-                showLoader("מכין להדפסה...");
-                try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer, worker: chosenWorker }) }); } catch(e) {}
-                hideLoader();
-            }
+            if (tasksToUpdateOnServer.length > 0) { showLoader("מעדכן שרת..."); try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "MARK_PRINTED", tasks: tasksToUpdateOnServer, worker: chosenWorker }) }); } catch(e) {} hideLoader(); }
 
-            const printNow = new Date();
-            const printNowStr = printNow.toLocaleDateString('en-GB') + ' ' + printNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            const printNow = new Date(); const printNowStr = printNow.toLocaleDateString('en-GB') + ' ' + printNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            let groups = {}; tasksToPrint.forEach(task => { let key = `${task.dept}|${task.dDate}`; if(!groups[key]) groups[key] = []; groups[key].push(task); });
 
-            let groups = {};
-            tasksToPrint.forEach(task => {
-                let key = `${task.dept}|${task.dDate}`;
-                if(!groups[key]) groups[key] = []; groups[key].push(task);
-            });
-
-            const printContainer = document.getElementById('printTasksContainer');
-            printContainer.innerHTML = '';
+            const printContainer = document.getElementById('printTasksContainer'); printContainer.innerHTML = '';
 
             for(let key in groups) {
                 let g = groups[key];
                 for(let i=0; i<g.length; i+=4) {
                     let chunk = g.slice(i, i+4);
-                    let page = `<div class="print-page">
-                        <div class="print-page-header">
-                            <div>צוות: ${currentTab.replace(/_/g, ' ')} | מחלקה: ${g[0].dept} | תаריך ביקורת: ${g[0].dDate}</div>
-                            <div class="print-page-header-sub">הודפס בתאריך: ${printNowStr}</div>
-                        </div>
-                        <div class="print-cards-grid">`;
-                    
+                    let page = `<div class="print-page"><div class="print-page-header"><div>צוות: ${currentTab.replace(/_/g, ' ')} | מחלקה: ${g[0].dept} | תאריך: ${g[0].dDate}</div><div class="print-page-header-sub">הופק בתאריך: ${printNowStr}</div></div><div class="print-cards-grid">`;
                     chunk.forEach(t => {
                         let nameVal = chosenWorker ? `<strong>${chosenWorker}</strong>` : "_________";
-                        page += `
-                        <div class="print-card" dir="${textDirection}">
-                            <div class="print-card-top"><span class="font-black text-xl">${printLabels.room} ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div>
-                            <div class="print-card-body">
-                                <img src="${t.img}" class="print-photo" onerror="this.style.display='none'">
-                                <div class="print-info">
-                                    <p class="defect-title">${t.defect}</p>
-                                    <p class="defect-comment">${t.comment || ""}</p>
-                                </div>
-                            </div>
-                            <div class="signature-box" dir="${textDirection}">
-                                <span>${printLabels.name} ${nameVal}</span>
-                                <span>${printLabels.date} _________</span>
-                                <span>${printLabels.sign} _________</span>
-                            </div>
-                        </div>`;
+                        page += `<div class="print-card" dir="${textDirection}"><div class="print-card-top"><span class="font-black text-xl">${printLabels.room} ${t.room}</span><span class="px-2 border rounded">${t.actT}</span></div><div class="print-card-body"><img src="${t.img}" class="print-photo" onerror="this.style.display='none'"><div class="print-info"><p class="defect-title">${t.defect}</p><p class="defect-comment">${t.comment || ""}</p></div></div><div class="signature-box" dir="${textDirection}"><span>${printLabels.name} ${nameVal}</span><span>${printLabels.date} _________</span><span>${printLabels.sign} _________</span></div></div>`;
                     });
                     printContainer.innerHTML += page + `</div></div>`;
                 }
             }
 
-            // Нативный вызов печати без прыжков разметки на экране
-            setTimeout(() => { 
-                window.print(); 
-                printContainer.innerHTML = ''; 
-                document.getElementById('printWorker').value = ""; 
-                loadTasks(); 
-            }, 300); 
+            if (mode === 'print') {
+                setTimeout(() => { window.print(); printContainer.innerHTML = ''; document.getElementById('printWorker').value = ""; loadTasks(); }, 300); 
+            } else if (mode === 'pdf') {
+                showLoader("מייצר PDF...");
+                
+                // Чтобы PDF сгенерировался корректно, вытаскиваем контейнер из невидимости за пределы экрана
+                printContainer.style.display = 'block'; printContainer.style.position = 'absolute'; printContainer.style.top = '-9999px'; printContainer.style.width = '210mm';
+                
+                const opt = {
+                  margin: 5, filename: `HCL_Tasks_${currentTab}.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                  html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                
+                html2pdf().set(opt).from(printContainer).save().then(() => {
+                    printContainer.style.display = 'none'; printContainer.style.position = 'static'; printContainer.style.width = 'auto'; printContainer.innerHTML = '';
+                    document.getElementById('printWorker').value = ""; hideLoader(); loadTasks(); showToast("קובץ PDF הורד בהצלחה!", "success");
+                }).catch(err => { console.error(err); hideLoader(); showToast("שגיאה ביצירת PDF", "error"); });
+            }
         }
     </script>
 </body>
