@@ -547,13 +547,11 @@
                         <p class="text-xs text-gray-400 mt-1"><i class="fas fa-clock ml-1"></i>${task.dateStr}</p>
                         
                         ${isPrinted ? `
-                            <div class="flex flex-col gap-1 bg-orange-50 border border-orange-200 rounded-xl p-3 mt-2 text-xs text-orange-900 max-w-sm">
-                                <div class="flex items-center justify-between font-black mb-1">
-                                    <span class="in-progress-stamp text-xs font-black px-1.5 py-0.5 rounded uppercase tracking-wider">בעבודה / В работе</span>
-                                    <button onclick="resetPrintStamp(${realIdx})" class="text-orange-400 hover:text-red-500 transition-colors p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo text-sm"></i></button>
-                                </div>
-                                ${task.printedWorker ? `<div><i class="fas fa-user ml-1 text-orange-600"></i> <strong>מבצע:</strong> ${task.printedWorker}</div>` : ''}
-                                ${task.printedTime ? `<div><i class="fas fa-print ml-1 text-orange-600"></i> <strong>הדפסה:</strong> ${task.printedTime}</div>` : ''}
+                            <div class="inline-flex items-center flex-wrap gap-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-2 text-xs text-orange-900 w-full md:w-auto">
+                                <span class="bg-orange-200 text-orange-800 px-2 py-1 rounded font-black uppercase tracking-wider">בעבודה / В работе</span>
+                                ${task.printedWorker ? `<span class="flex items-center"><i class="fas fa-user ml-1 text-orange-600"></i>${task.printedWorker}</span>` : ''}
+                                ${task.printedTime ? `<span class="flex items-center"><i class="fas fa-print ml-1 text-orange-600"></i>${task.printedTime}</span>` : ''}
+                                <button onclick="resetPrintStamp(${realIdx})" class="text-orange-500 hover:text-red-500 transition-colors ml-auto md:mr-4 mr-0 p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo text-base"></i></button>
                             </div>
                         ` : ''}
                     </div>
@@ -748,10 +746,13 @@
                   html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 
-                html2pdf().set(opt).from(printContainer).save().then(() => {
-                    printContainer.style.display = 'none'; printContainer.style.position = 'static'; printContainer.style.width = 'auto'; printContainer.innerHTML = '';
-                    document.getElementById('printWorker').value = ""; hideLoader(); loadTasks(); showToast("קובץ PDF הורד בהצלחה!", "success");
-                }).catch(err => { console.error(err); hideLoader(); showToast("שגיאה ביצירת PDF", "error"); });
+                // Даем браузеру секунду на то, чтобы отрендерить DOM и подгрузить картинки
+                setTimeout(() => {
+                    html2pdf().set(opt).from(printContainer).save().then(() => {
+                        printContainer.style.display = 'none'; printContainer.style.position = 'static'; printContainer.style.width = 'auto'; printContainer.innerHTML = '';
+                        document.getElementById('printWorker').value = ""; hideLoader(); loadTasks(); showToast("קובץ PDF הורד בהצלחה!", "success");
+                    }).catch(err => { console.error(err); hideLoader(); showToast("שגיאה ביצירת PDF", "error"); });
+                }, 1000);
             }
         }
     </script>
