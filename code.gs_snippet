@@ -1,0 +1,78 @@
+// Скопируй этот код и добавь в свой файл code.gs (или любой другой .gs файл) 
+// в редакторе Google Apps Script твоей таблицы.
+
+// Этот блок нужно добавить внутрь твоей существующей функции doPost(e)
+// Скорее всего, у тебя там есть конструкция switch (action) или if (action === '...')
+
+/* --- НАЧАЛО БЛОКА ДЛЯ ВСТАВКИ В doPost(e) --- */
+
+if (action === "ADD_PERSONNEL_TASK") {
+  try {
+    var sheetName = data.sheetName || "ליקויים"; // По умолчанию в 'כללי' (Общие)
+    var dept = data.department || "Неизвестно";
+    var room = data.room || "";
+    var defect = "דיווח מצוות המחלקה"; // Метка, что это от персонала
+    var comment = data.comment || "";
+    var photoBase64 = data.photoBase64 || "";
+    var language = data.language || "he";
+    
+    // Сохраняем фото, если оно есть
+    var photoUrl = "";
+    if (photoBase64) {
+      photoUrl = savePhotoToDrive(photoBase64); // Используем твою функцию или функцию ниже
+    }
+    
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName);
+    }
+    
+    // Форматируем текущую дату как DD/MM/YYYY HH:MM
+    var now = new Date();
+    var dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    
+    // Предполагаемый порядок колонок в твоей таблице (как в админке):
+    // Дата, Инспектор, Отделение, Комната, Дефект, Комментарий, Статус, Фото, Приоритет/Тип (1/2)
+    // Подстрой массив ниже под свои реальные колонки!
+    var rowData = [
+      dateStr,              // Дата
+      "צוות מחלקה",         // Инспектор (Пишем, что это персонал)
+      dept,                 // Отделение
+      room,                 // Комната
+      defect,               // Дефект
+      comment,              // Комментарий
+      "פתוח",               // Статус (Открыто)
+      photoUrl,             // Ссылка на фото
+      2                     // 2 = Ремонт (по умолчанию)
+    ];
+    
+    sheet.appendRow(rowData);
+    
+    // ОТПРАВКА УВЕДОМЛЕНИЯ В TELEGRAM (ОПЦИОНАЛЬНО)
+    // sendTelegramNotification(dept, room, comment, photoUrl);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/* --- КОНЕЦ БЛОКА --- */
+
+
+
+// Если у тебя еще нет функции сохранения фото, добавь эту в конец файла:
+function savePhotoToDrive(base64Data) {
+  try {
+    // ВСТАВЬ СЮДА ID ПАПКИ НА GOOGLE DRIVE, КУДА СОХРАНЯТЬ ФОТО!
+    var FOLDER_ID = "ТВОЙ_ID_ПАПКИ_В_GOOGLE_DRIVE"; 
+    
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var data = base64Data.split(',')[1]; 
+    var blob = Utilities.newBlob(Utilities.base64Decode(data), 'image/jpeg', 'photo_' + new Date().getTime() + '.jpg');
+    var file = folder.createFile(blob);
+    return file.getUrl(); 
+  } catch(e) {
+    return "";
+  }
+}
