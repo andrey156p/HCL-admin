@@ -27,12 +27,20 @@
     <div id="successScreen" class="fixed inset-0 bg-green-500 hidden z-50 flex flex-col items-center justify-center text-white p-6 text-center">
         <i class="fas fa-check-circle text-7xl mb-6"></i>
         <h2 class="text-3xl font-black mb-2" data-i18n="successTitle">הבקשה נשלחה בהצלחה!</h2>
-        <p class="text-lg font-medium opacity-90" data-i18n="successDesc">הצוות יטפל בזה בהקדם.</p>
+        <p class="text-lg font-medium opacity-90 mb-8" data-i18n="successDesc">הצוות יטפל בזה בהקדם.</p>
+        <button onclick="resetForm()" class="bg-white text-green-700 px-8 py-3 rounded-xl font-bold shadow hover:bg-gray-100 transition-colors" data-i18n="closeBtn">דיווח חדש (New Report)</button>
     </div>
 
     <div class="max-w-md mx-auto bg-white rounded-3xl shadow-lg p-6 border border-gray-100 mt-4">
-        <div class="text-center mb-6 border-b pb-4">
-            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+        <div class="text-center mb-6 border-b pb-4 relative">
+            <div class="absolute top-0 right-0 ltr:left-0 ltr:right-auto">
+                <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-gray-100 text-gray-600 text-xs font-bold py-1 px-2 rounded-lg outline-none cursor-pointer">
+                    <option value="he">עברית</option>
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 mt-4">
                 <i class="fas fa-tools"></i>
             </div>
             <h1 class="text-2xl font-black text-gray-800" data-i18n="formTitle">דיווח על תקלה</h1>
@@ -40,6 +48,12 @@
         </div>
 
         <div class="space-y-5">
+            <!-- Reporter Name -->
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="nameLabel">שם המדווח</label>
+                <input type="text" id="nameInput" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="ישראל ישראלי" data-i18n-ph="namePh">
+            </div>
+
             <!-- Room -->
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="roomLabel">חדר / מיקום</label>
@@ -61,13 +75,13 @@
 
             <!-- Description & Voice -->
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="descLabel">תיאור התקלה</label>
-                <div class="relative">
-                    <textarea id="descInput" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-base focus:ring-2 focus:ring-indigo-500 outline-none pr-12" placeholder="..." data-i18n-ph="descPh"></textarea>
-                    <button id="micBtn" onclick="toggleDictation()" class="absolute top-3 right-3 w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-sm font-bold text-gray-700" data-i18n="descLabel">תיאור התקלה</label>
+                    <button id="micBtn" type="button" onclick="toggleDictation()" class="w-10 h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors shadow-sm" title="הכתבה קולית">
                         <i class="fas fa-microphone text-lg"></i>
                     </button>
                 </div>
+                <textarea id="descInput" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-base focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="..." data-i18n-ph="descPh"></textarea>
             </div>
 
             <!-- Photo -->
@@ -92,9 +106,9 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         
         const dict = {
-            ru: { pageTitle: "Сообщить о проблеме", formTitle: "Отправка заявки", roomLabel: "Кабинет / Место", roomPh: "Напр. 101", categoryLabel: "Категория", catElec: "Электрика", catAc: "Кондиционер", catBuild: "Двери / Стены", catBeds: "Кровати / Оборудование", catClean: "Уборка", catOther: "Другое", descLabel: "Описание проблемы", descPh: "Опишите проблему голосом или текстом...", photoLabel: "Фото (необязательно)", photoAdd: "Добавить фото", submitBtn: "Отправить заявку", sending: "Отправка...", successTitle: "Заявка отправлена!", successDesc: "Техническая служба скоро займется этим.", errFill: "Заполните кабинет и описание!", errNet: "Ошибка сети." },
-            en: { pageTitle: "Report Issue", formTitle: "Report an Issue", roomLabel: "Room / Location", roomPh: "e.g. 101", categoryLabel: "Category", catElec: "Electricity", catAc: "AC", catBuild: "Doors / Walls", catBeds: "Beds / Medical Eq", catClean: "Cleaning", catOther: "Other", descLabel: "Description", descPh: "Describe the issue...", photoLabel: "Photo (optional)", photoAdd: "Add Photo", submitBtn: "Submit Report", sending: "Sending...", successTitle: "Report Submitted!", successDesc: "The team will handle it soon.", errFill: "Fill room and description!", errNet: "Network error." },
-            he: { pageTitle: "דיווח על תקלה", formTitle: "דיווח על תקלה", roomLabel: "חדר / מיקום", roomPh: "לדוגמה 101", categoryLabel: "סוג התקלה", catElec: "חשמל", catAc: "מיזוג אוויר", catBuild: "בינוי ודלתות", catBeds: "מיטות / ציוד רפואי", catClean: "ניקיון", catOther: "אחר", descLabel: "תיאור התקלה", descPh: "תאר את התקלה...", photoLabel: "צילום (אופציונלי)", photoAdd: "הוסף תמונה", submitBtn: "שלח דיווח", sending: "שולח...", successTitle: "הדיווח נשלח!", successDesc: "הצוות יטפל בזה בהקדם.", errFill: "מלא חדר ותיאור!", errNet: "שגיאת רשת." }
+            ru: { pageTitle: "Сообщить о проблеме", formTitle: "Отправка заявки", nameLabel: "Ваше имя", namePh: "Иван Иванов", roomLabel: "Кабинет / Место", roomPh: "Напр. 101", categoryLabel: "Категория", catElec: "Электрика", catAc: "Кондиционер", catBuild: "Двери / Стены", catBeds: "Кровати / Оборудование", catClean: "Уборка", catOther: "Другое", descLabel: "Описание проблемы", descPh: "Опишите проблему голосом или текстом...", photoLabel: "Фото (необязательно)", photoAdd: "Добавить фото", submitBtn: "Отправить заявку", sending: "Отправка...", successTitle: "Заявка отправлена!", successDesc: "Техническая служба скоро займется этим.", closeBtn: "Новая заявка", errFill: "Заполните имя, кабинет и описание!", errNet: "Ошибка сети." },
+            en: { pageTitle: "Report Issue", formTitle: "Report an Issue", nameLabel: "Your Name", namePh: "John Doe", roomLabel: "Room / Location", roomPh: "e.g. 101", categoryLabel: "Category", catElec: "Electricity", catAc: "AC", catBuild: "Doors / Walls", catBeds: "Beds / Medical Eq", catClean: "Cleaning", catOther: "Other", descLabel: "Description", descPh: "Describe the issue...", photoLabel: "Photo (optional)", photoAdd: "Add Photo", submitBtn: "Submit Report", sending: "Sending...", successTitle: "Report Submitted!", successDesc: "The team will handle it soon.", closeBtn: "New Report", errFill: "Fill name, room and description!", errNet: "Network error." },
+            he: { pageTitle: "דיווח על תקלה", formTitle: "דיווח על תקלה", nameLabel: "שם המדווח", namePh: "ישראל ישראלי", roomLabel: "חדר / מיקום", roomPh: "לדוגמה 101", categoryLabel: "סוג התקלה", catElec: "חשמל", catAc: "מיזוג אוויר", catBuild: "בינוי ודלתות", catBeds: "מיטות / ציוד רפואי", catClean: "ניקיון", catOther: "אחר", descLabel: "תיאור התקלה", descPh: "תאר את התקלה...", photoLabel: "צילום (אופציונלי)", photoAdd: "הוסף תמונה", submitBtn: "שלח דיווח", sending: "שולח...", successTitle: "הדיווח נשלח!", successDesc: "הצוות יטפל בזה בהקדם.", closeBtn: "דיווח חדש", errFill: "חובה למלא שם, חדר ותיאור!", errNet: "שגיאת רשת." }
         };
 
         let lang = 'he';
@@ -111,21 +125,39 @@
             department = urlParams.get('dept') || "כללי (General)";
             document.getElementById('deptDisplay').innerText = department;
 
-            // Detect language
+            // Detect language (force Hebrew unless ru/en explicitly detected to avoid mistakes)
             const browserLang = (navigator.language || navigator.userLanguage).toLowerCase();
-            if (browserLang.startsWith('ru')) { lang = 'ru'; isRtl = false; }
-            else if (browserLang.startsWith('en')) { lang = 'en'; isRtl = false; }
+            if (browserLang.includes('ru')) { lang = 'ru'; isRtl = false; }
+            else if (browserLang.includes('en')) { lang = 'en'; isRtl = false; }
+            else { lang = 'he'; isRtl = true; } 
             
-            if (!isRtl) {
-                document.documentElement.dir = 'ltr';
-                document.documentElement.lang = lang;
-                document.getElementById('micBtn').classList.replace('right-3', 'left-3');
-                document.getElementById('descInput').classList.replace('pr-12', 'pl-12');
-            }
-
+            document.getElementById('langSelect').value = lang;
+            applyLangSetup();
             applyTranslations();
             initSpeechRecognition();
         });
+
+        function changeLanguage(newLang) {
+            lang = newLang;
+            isRtl = (lang === 'he');
+            applyLangSetup();
+            applyTranslations();
+        }
+
+        function applyLangSetup() {
+            document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+            document.documentElement.lang = lang;
+            // The mic button is now outside the textarea, no need for positioning classes
+        }
+
+        function resetForm() {
+            document.getElementById('roomInput').value = "";
+            document.getElementById('descInput').value = "";
+            photoBase64 = "";
+            document.getElementById('photoIcon').className = "fas fa-camera text-2xl text-gray-400 mb-2";
+            document.getElementById('photoText').innerText = dict[lang].photoAdd;
+            document.getElementById('successScreen').classList.add('hidden');
+        }
 
         function applyTranslations() {
             const T = dict[lang];
@@ -201,11 +233,12 @@
         }
 
         async function submitReport() {
+            const reporterName = document.getElementById('nameInput').value.trim();
             const room = document.getElementById('roomInput').value.trim();
             const category = document.getElementById('categorySelect').value;
             const desc = document.getElementById('descInput').value.trim();
             
-            if (!room || !desc) {
+            if (!reporterName || !room || !desc) {
                 alert(dict[lang].errFill);
                 return;
             }
@@ -214,6 +247,7 @@
 
             const payload = {
                 action: "ADD_PERSONNEL_TASK",
+                reporterName: reporterName,
                 department: department,
                 room: room,
                 sheetName: category, // Using category as the team/sheet name in Admin

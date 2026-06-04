@@ -39,12 +39,14 @@
         @media print {
             @page { size: A4 portrait; margin: 8mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
-            #noPrintUI { display: none !important; }
+            #noPrintUI, #qrModal { display: none !important; }
+            .print-page { page-break-after: always; padding: 20px; padding-top: 35px; }
+            .print-page-header { font-size: 20px; font-weight: 900; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
             #printTasksContainer { display: block !important; }
         }
 
         /* ГЛОБАЛЬНЫЕ СТИЛИ ПЕЧАТИ (Вынесены из @media print, чтобы генератор PDF их видел) */
-        .print-page { width: 100%; height: 280mm; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: column; background: white;}
+        .print-page { width: 100%; height: 280mm; box-sizing: border-box; display: flex; flex-direction: column; background: white;}
         .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center; color: black;}
         .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
         .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 50px); }
@@ -524,13 +526,21 @@
 
             if(filtered.length === 0) { screen.innerHTML = '<p class="text-center p-10 text-gray-400 font-bold">אין משימות (Нет заданий)</p>'; updateSelectAllBtn(); return; }
 
+            // Sort QR tasks to the top
+            filtered.sort((a, b) => {
+                const aIsQr = (a.defect.includes("דיווח מצוות המחלקה") || a.defect.includes("תקלה חדשה") || a.inspector.includes("צוות")) ? 1 : 0;
+                const bIsQr = (b.defect.includes("דיווח מצוות המחלקה") || b.defect.includes("תקלה חדשה") || b.inspector.includes("צוות")) ? 1 : 0;
+                return bIsQr - aIsQr;
+            });
+
             filtered.forEach((task) => {
                 const actT = task.actionType == 1 ? "החלפה" : "תיקון"; const img = fixImageUrl(task.photo);
                 const isPrinted = (task.status === "בעבודה"); const cleanSheetName = escapeStr(task.sheet).replace(/_/g, ' ');
+                const isQr = (task.defect.includes("דיווח מצוות המחלקה") || task.defect.includes("תקלה חדשה") || task.inspector.includes("צוות"));
                 const realIdx = allTasks.indexOf(task);
 
                 screen.innerHTML += `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/30' : ''}" id="task-card-${realIdx}">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-5 mb-4 relative ${isPrinted ? 'border-orange-300 bg-orange-50/50' : (isQr ? 'border-pink-400 bg-pink-50 ring-2 ring-pink-200' : '')}" id="task-card-${realIdx}">
                     <div class="absolute top-4 left-4 md:static md:flex md:items-center">
                         <input type="checkbox" checked class="task-checkbox w-7 h-7 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shadow-sm" data-index="${realIdx}" onchange="updateSelectAllBtn()">
                     </div>
@@ -539,24 +549,23 @@
                         <div class="inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black mb-2 border border-blue-200 shadow-sm">
                             <i class="fas fa-users ml-1"></i> צוות נוכחי: ${cleanSheetName}
                         </div>
+                        ${isQr ? `<div class="inline-block bg-pink-100 text-pink-700 px-3 py-1 rounded-lg text-xs font-black mb-2 border border-pink-200 shadow-sm mr-2"><i class="fas fa-mobile-alt ml-1"></i> דיווח צוות / QR</div>` : ''}
                         <div class="flex items-center gap-3">
                             <h3 class="text-xl font-bold">${task.dept} | חדר: ${task.room} <span class="text-sm font-normal px-2 bg-gray-100 rounded">${actT}</span></h3>
                         </div>
                         <p class="font-bold mt-1">${task.defect}</p>
                         <p class="text-gray-500 text-sm">${task.comment || ""}</p>
-                        <p class="text-xs text-gray-400 mt-1"><i class="fas fa-clock ml-1"></i>${task.dateStr}</p>
-                        
+                        <p class="text-xs text-gray-400 mt-1"><i class="fas fa-clock ml-1"></i>${task.dateStr} | ${task.inspector}</p>
+                    </div>
+                    <div class="flex flex-row md:flex-col items-center justify-center gap-2 w-full md:w-48">
                         ${isPrinted ? `
-                            <div class="inline-flex items-center flex-wrap gap-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-2 text-xs text-orange-900 w-full md:w-auto">
-                                <span class="bg-orange-200 text-orange-800 px-2 py-1 rounded font-black uppercase tracking-wider">בעבודה / В работе</span>
-                                ${task.printedWorker ? `<span class="flex items-center"><i class="fas fa-user ml-1 text-orange-600"></i>${task.printedWorker}</span>` : ''}
-                                ${task.printedTime ? `<span class="flex items-center"><i class="fas fa-print ml-1 text-orange-600"></i>${task.printedTime}</span>` : ''}
-                                <button onclick="resetPrintStamp(${realIdx})" class="text-orange-500 hover:text-red-500 transition-colors ml-auto md:mr-4 mr-0 p-1" title="בטל סטטוס / Сбросить"><i class="fas fa-undo text-base"></i></button>
+                            <div class="flex flex-col items-center justify-center gap-1 bg-orange-100 border border-orange-300 rounded-xl px-2 py-1 text-xs text-orange-900 w-full text-center shadow-inner">
+                                <span class="font-black text-[11px] uppercase text-orange-800"><i class="fas fa-hammer ml-1"></i>בעבודה</span>
+                                ${task.printedWorker ? `<span class="font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title="${task.printedWorker}">${task.printedWorker}</span>` : ''}
+                                <button onclick="resetPrintStamp(${realIdx})" class="text-orange-600 font-bold hover:text-red-600 underline mt-1"><i class="fas fa-undo"></i> החזר לפתוח</button>
                             </div>
                         ` : ''}
-                    </div>
-                    <div class="flex flex-row md:flex-col items-center justify-center gap-2">
-                        <select onchange="moveTask(${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer">
+                        <select onchange="moveTask(${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer w-full">
                             <option value="" disabled selected>העבר צוות...</option>
                             <option value="חשמל">חשמל (Электрика)</option>
                             <option value="מיזוג_אוויר">מיזוג (Кондиционирование)</option>
@@ -734,7 +743,7 @@
             }
 
             if (mode === 'print') {
-                setTimeout(() => { window.print(); printContainer.innerHTML = ''; document.getElementById('printWorker').value = ""; loadTasks(); }, 300); 
+                setTimeout(() => { window.print(); printContainer.innerHTML = ''; document.getElementById('printWorker').value = ""; document.getElementById('printLang').value = "he"; loadTasks(); }, 300); 
             } else if (mode === 'pdf') {
                 showLoader("מייצר PDF...");
                 
@@ -748,9 +757,10 @@
                 
                 // Даем браузеру секунду на то, чтобы отрендерить DOM и подгрузить картинки
                 setTimeout(() => {
-                    html2pdf().set(opt).from(printContainer).save().then(() => {
+                    html2pdf().set(opt).from(printContainer).output('bloburl').then((pdfUrl) => {
+                        window.open(pdfUrl, '_blank');
                         printContainer.style.display = 'none'; printContainer.style.position = 'static'; printContainer.style.width = 'auto'; printContainer.innerHTML = '';
-                        document.getElementById('printWorker').value = ""; hideLoader(); loadTasks(); showToast("קובץ PDF הורד בהצלחה!", "success");
+                        document.getElementById('printWorker').value = ""; document.getElementById('printLang').value = "he"; hideLoader(); loadTasks(); showToast("קובץ PDF נפתח בכרטיסייה חדשה", "success");
                     }).catch(err => { console.error(err); hideLoader(); showToast("שגיאה ביצירת PDF", "error"); });
                 }, 1000);
             }
