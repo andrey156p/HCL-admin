@@ -31,6 +31,17 @@
         <button onclick="resetForm()" class="bg-white text-green-700 px-8 py-3 rounded-xl font-bold shadow hover:bg-gray-100 transition-colors" data-i18n="closeBtn">דיווח חדש (New Report)</button>
     </div>
 
+    <div id="errorModal" class="fixed inset-0 bg-black/50 hidden z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full transform scale-95 transition-transform duration-300" id="errorModalBox">
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2" data-i18n="errorTitle">שגיאה!</h2>
+            <p class="text-gray-600 font-medium mb-6" data-i18n="errCustom">לא נוכל לטפל בפנייתך אם לא תמלא את שדות החובה!</p>
+            <button onclick="closeErrorModal()" class="w-full bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-colors" data-i18n="closeErrBtn">הבנתי</button>
+        </div>
+    </div>
+
     <div class="max-w-md mx-auto bg-white rounded-3xl shadow-lg p-6 border border-gray-100 mt-4">
         <div class="text-center mb-6 border-b pb-4 relative">
             <div class="absolute top-0 right-0 ltr:left-0 ltr:right-auto">
@@ -50,20 +61,21 @@
         <div class="space-y-5">
             <!-- Reporter Name -->
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="nameLabel">שם המדווח</label>
-                <input type="text" id="nameInput" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="ישראל ישראלי" data-i18n-ph="namePh">
+                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="nameLabel">שם המדווח <span class="text-red-500">*</span></label>
+                <input type="text" id="nameInput" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="ישראל ישראלי" data-i18n-ph="namePh">
             </div>
 
             <!-- Room -->
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="roomLabel">חדר / מיקום</label>
-                <input type="text" id="roomInput" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="101" data-i18n-ph="roomPh">
+                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="roomLabel">חדר / מיקום <span class="text-red-500">*</span></label>
+                <input type="text" id="roomInput" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="101" data-i18n-ph="roomPh">
             </div>
 
             <!-- Category -->
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="categoryLabel">סוג התקלה</label>
-                <select id="categorySelect" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                <label class="block text-sm font-bold text-gray-700 mb-1" data-i18n="categoryLabel">סוג התקלה <span class="text-red-500">*</span></label>
+                <select id="categorySelect" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
+                    <option value="" disabled selected data-i18n="catSelect">בחר סוג תקלה...</option>
                     <option value="חשמל" data-i18n="catElec">חשמל</option>
                     <option value="מיזוג_אוויר" data-i18n="catAc">מיזוג אוויר</option>
                     <option value="בינוי_ודלתות" data-i18n="catBuild">בינוי ודלתות</option>
@@ -76,12 +88,12 @@
             <!-- Description & Voice -->
             <div>
                 <div class="flex justify-between items-center mb-1">
-                    <label class="block text-sm font-bold text-gray-700" data-i18n="descLabel">תיאור התקלה</label>
+                    <label class="block text-sm font-bold text-gray-700" data-i18n="descLabel">תיאור התקלה <span class="text-red-500">*</span></label>
                     <button id="micBtn" type="button" onclick="toggleDictation()" class="w-10 h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors shadow-sm" title="הכתבה קולית">
                         <i class="fas fa-microphone text-lg"></i>
                     </button>
                 </div>
-                <textarea id="descInput" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-base focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="..." data-i18n-ph="descPh"></textarea>
+                <textarea id="descInput" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-medium text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="..." data-i18n-ph="descPh"></textarea>
             </div>
 
             <!-- Photo -->
@@ -106,9 +118,9 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         
         const dict = {
-            ru: { pageTitle: "Сообщить о проблеме", formTitle: "Отправка заявки", nameLabel: "Ваше имя", namePh: "Иван Иванов", roomLabel: "Кабинет / Место", roomPh: "Напр. 101", categoryLabel: "Категория", catElec: "Электрика", catAc: "Кондиционер", catBuild: "Двери / Стены", catBeds: "Кровати / Оборудование", catClean: "Уборка", catOther: "Другое", descLabel: "Описание проблемы", descPh: "Опишите проблему голосом или текстом...", photoLabel: "Фото (необязательно)", photoAdd: "Добавить фото", submitBtn: "Отправить заявку", sending: "Отправка...", successTitle: "Заявка отправлена!", successDesc: "Техническая служба скоро займется этим.", closeBtn: "Новая заявка", errFill: "Заполните имя, кабинет и описание!", errNet: "Ошибка сети." },
-            en: { pageTitle: "Report Issue", formTitle: "Report an Issue", nameLabel: "Your Name", namePh: "John Doe", roomLabel: "Room / Location", roomPh: "e.g. 101", categoryLabel: "Category", catElec: "Electricity", catAc: "AC", catBuild: "Doors / Walls", catBeds: "Beds / Medical Eq", catClean: "Cleaning", catOther: "Other", descLabel: "Description", descPh: "Describe the issue...", photoLabel: "Photo (optional)", photoAdd: "Add Photo", submitBtn: "Submit Report", sending: "Sending...", successTitle: "Report Submitted!", successDesc: "The team will handle it soon.", closeBtn: "New Report", errFill: "Fill name, room and description!", errNet: "Network error." },
-            he: { pageTitle: "דיווח על תקלה", formTitle: "דיווח על תקלה", nameLabel: "שם המדווח", namePh: "ישראל ישראלי", roomLabel: "חדר / מיקום", roomPh: "לדוגמה 101", categoryLabel: "סוג התקלה", catElec: "חשמל", catAc: "מיזוג אוויר", catBuild: "בינוי ודלתות", catBeds: "מיטות / ציוד רפואי", catClean: "ניקיון", catOther: "אחר", descLabel: "תיאור התקלה", descPh: "תאר את התקלה...", photoLabel: "צילום (אופציונלי)", photoAdd: "הוסף תמונה", submitBtn: "שלח דיווח", sending: "שולח...", successTitle: "הדיווח נשלח!", successDesc: "הצוות יטפל בזה בהקדם.", closeBtn: "דיווח חדש", errFill: "חובה למלא שם, חדר ותיאור!", errNet: "שגיאת רשת." }
+            ru: { pageTitle: "Сообщить о проблеме", formTitle: "Отправка заявки", nameLabel: "Ваше имя ", namePh: "Иван Иванов", roomLabel: "Кабинет / Место ", roomPh: "Напр. 101", categoryLabel: "Категория ", catSelect: "Выберите категорию...", catElec: "Электрика", catAc: "Кондиционер", catBuild: "Двери / Стены", catBeds: "Кровати / Оборудование", catClean: "Уборка", catOther: "Другое", descLabel: "Описание проблемы ", descPh: "Опишите проблему голосом или текстом...", photoLabel: "Фото (необязательно)", photoAdd: "Добавить фото", submitBtn: "Отправить заявку", sending: "Отправка...", successTitle: "Заявка отправлена!", successDesc: "Техническая служба скоро займется этим.", closeBtn: "Новая заявка", errorTitle: "Внимание!", errCustom: "Мы не сможем обработать Вашу заявку, если Вы не заполните обязательные поля!", closeErrBtn: "Понятно", errNet: "Ошибка сети." },
+            en: { pageTitle: "Report Issue", formTitle: "Report an Issue", nameLabel: "Your Name ", namePh: "John Doe", roomLabel: "Room / Location ", roomPh: "e.g. 101", categoryLabel: "Category ", catSelect: "Select category...", catElec: "Electricity", catAc: "AC", catBuild: "Doors / Walls", catBeds: "Beds / Medical Eq", catClean: "Cleaning", catOther: "Other", descLabel: "Description ", descPh: "Describe the issue...", photoLabel: "Photo (optional)", photoAdd: "Add Photo", submitBtn: "Submit Report", sending: "Sending...", successTitle: "Report Submitted!", successDesc: "The team will handle it soon.", closeBtn: "New Report", errorTitle: "Attention!", errCustom: "We cannot process your request if you do not fill in the mandatory fields!", closeErrBtn: "Got it", errNet: "Network error." },
+            he: { pageTitle: "דיווח על תקלה", formTitle: "דיווח על תקלה", nameLabel: "שם המדווח ", namePh: "ישראל ישראלי", roomLabel: "חדר / מיקום ", roomPh: "לדוגמה 101", categoryLabel: "סוג התקלה ", catSelect: "בחר סוג תקלה...", catElec: "חשמל", catAc: "מיזוג אוויר", catBuild: "בינוי ודלתות", catBeds: "מיטות / ציוד רפואי", catClean: "ניקיון", catOther: "אחר", descLabel: "תיאור התקלה ", descPh: "תאר את התקלה...", photoLabel: "צילום (אופציונלי)", photoAdd: "הוסף תמונה", submitBtn: "שלח דיווח", sending: "שולח...", successTitle: "הדיווח נשלח!", successDesc: "הצוות יטפל בזה בהקדם.", closeBtn: "דיווח חדש", errorTitle: "שים לב!", errCustom: "לא נוכל לטפל בפנייתך אם לא תמלא את שדות החובה!", closeErrBtn: "הבנתי", errNet: "שגיאת רשת." }
         };
 
         let lang = 'he';
@@ -157,6 +169,16 @@
             document.getElementById('photoIcon').className = "fas fa-camera text-2xl text-gray-400 mb-2";
             document.getElementById('photoText').innerText = dict[lang].photoAdd;
             document.getElementById('successScreen').classList.add('hidden');
+            document.getElementById('categorySelect').value = "";
+            [document.getElementById('nameInput'), document.getElementById('roomInput'), document.getElementById('categorySelect'), document.getElementById('descInput')]
+                .forEach(el => el.classList.remove('border-red-500', 'ring-2', 'ring-red-200'));
+        }
+
+        function closeErrorModal() {
+            const box = document.getElementById('errorModalBox');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => document.getElementById('errorModal').classList.add('hidden'), 200);
         }
 
         function applyTranslations() {
@@ -233,13 +255,32 @@
         }
 
         async function submitReport() {
-            const reporterName = document.getElementById('nameInput').value.trim();
-            const room = document.getElementById('roomInput').value.trim();
-            const category = document.getElementById('categorySelect').value;
-            const desc = document.getElementById('descInput').value.trim();
+            const reporterNameEl = document.getElementById('nameInput');
+            const roomEl = document.getElementById('roomInput');
+            const categoryEl = document.getElementById('categorySelect');
+            const descEl = document.getElementById('descInput');
+
+            const reporterName = reporterNameEl.value.trim();
+            const room = roomEl.value.trim();
+            const category = categoryEl.value;
+            const desc = descEl.value.trim();
             
-            if (!reporterName || !room || !desc) {
-                alert(dict[lang].errFill);
+            let hasError = false;
+            [reporterNameEl, roomEl, categoryEl, descEl].forEach(el => el.classList.remove('border-red-500', 'ring-2', 'ring-red-200'));
+
+            if (!reporterName) { reporterNameEl.classList.add('border-red-500', 'ring-2', 'ring-red-200'); hasError = true; }
+            if (!room) { roomEl.classList.add('border-red-500', 'ring-2', 'ring-red-200'); hasError = true; }
+            if (!category) { categoryEl.classList.add('border-red-500', 'ring-2', 'ring-red-200'); hasError = true; }
+            if (!desc) { descEl.classList.add('border-red-500', 'ring-2', 'ring-red-200'); hasError = true; }
+
+            if (hasError) {
+                const modal = document.getElementById('errorModal');
+                const box = document.getElementById('errorModalBox');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    box.classList.remove('scale-95');
+                    box.classList.add('scale-100');
+                }, 10);
                 return;
             }
 
