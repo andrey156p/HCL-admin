@@ -746,15 +746,18 @@
                 setTimeout(() => { window.print(); printContainer.innerHTML = ''; document.getElementById('printWorker').value = ""; document.getElementById('printLang').value = "he"; loadTasks(); }, 300); 
             } else if (mode === 'pdf') {
                 showLoader("מייצר PDF...");
-                document.getElementById('loader').classList.replace('bg-white/90', 'bg-white'); // Make loader solid to hide the print container completely
+                document.getElementById('loader').classList.replace('bg-white/90', 'bg-white'); 
                 
-                // Чтобы PDF сгенерировался 100%, элемент должен быть реально на экране, но мы прячем его под лоадером!
+                const oldScrollY = window.scrollY;
+                window.scrollTo(0, 0);
+                
                 printContainer.style.display = 'block'; 
                 printContainer.style.position = 'absolute'; 
                 printContainer.style.top = '0'; 
                 printContainer.style.left = '0';
                 printContainer.style.width = '210mm';
-                printContainer.style.zIndex = '10'; // Лоадер имеет z-50, так что он перекроет этот контейнер
+                printContainer.style.backgroundColor = 'white';
+                printContainer.style.zIndex = '10'; 
                 
                 const today = new Date();
                 const dateStrFile = ("0" + today.getDate()).slice(-2) + "-" + ("0" + (today.getMonth() + 1)).slice(-2) + "-" + today.getFullYear();
