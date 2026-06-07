@@ -751,6 +751,9 @@
                 const noPrintUI = document.getElementById('noPrintUI');
                 noPrintUI.style.display = 'none';
                 printContainer.style.display = 'block';
+                printContainer.style.width = '210mm';
+                printContainer.style.margin = '0 auto';
+                printContainer.style.backgroundColor = 'white';
                 
                 window.scrollTo(0, 0);
                 
@@ -758,16 +761,18 @@
                 const dateStrFile = ("0" + today.getDate()).slice(-2) + "-" + ("0" + (today.getMonth() + 1)).slice(-2) + "-" + today.getFullYear();
                 
                 const opt = {
-                  margin: 3, filename: `HCL_Tasks_${currentTab}_${dateStrFile}.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                  margin: 0, filename: `HCL_Tasks_${currentTab}_${dateStrFile}.pdf`, image: { type: 'jpeg', quality: 0.98 },
                   html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1024 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 
                 const imgs = Array.from(printContainer.querySelectorAll('img.print-photo'));
                 Promise.all(imgs.map(img => {
                     if (!img.src.includes('drive.google.com')) return Promise.resolve();
-                    return fetch('https://corsproxy.io/?' + encodeURIComponent(img.src))
+                    const p1 = 'https://wsrv.nl/?url=' + encodeURIComponent(img.src);
+                    const p2 = 'https://corsproxy.io/?' + encodeURIComponent(img.src);
+                    return fetch(p1)
                         .then(r => { if(!r.ok) throw new Error(); return r.blob(); })
-                        .catch(() => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(img.src)).then(r => { if(!r.ok) throw new Error(); return r.blob(); }))
+                        .catch(() => fetch(p2).then(r => { if(!r.ok) throw new Error(); return r.blob(); }))
                         .then(blob => new Promise(resolve => {
                             let reader = new FileReader();
                             reader.onloadend = () => { img.src = reader.result; resolve(); };
