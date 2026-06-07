@@ -752,7 +752,11 @@
                 noPrintUI.style.display = 'none';
                 printContainer.style.display = 'block';
                 printContainer.style.width = '210mm';
-                printContainer.style.margin = '0 auto';
+                printContainer.style.margin = '0';
+                printContainer.style.position = 'absolute';
+                printContainer.style.left = '0';
+                printContainer.style.top = '0';
+                printContainer.dir = 'ltr';
                 printContainer.style.backgroundColor = 'white';
                 
                 window.scrollTo(0, 0);
