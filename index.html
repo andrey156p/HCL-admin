@@ -743,6 +743,8 @@
             }
 
             if (mode === 'print') {
+                printContainer.removeAttribute('style');
+                printContainer.removeAttribute('dir');
                 setTimeout(() => { window.print(); printContainer.innerHTML = ''; document.getElementById('printWorker').value = ""; document.getElementById('printLang').value = "he"; loadTasks(); }, 300); 
             } else if (mode === 'pdf') {
                 showLoader("מייצר קובץ PDF... מכין תמונות (זה יכול לקחת כמה שניות)");
@@ -787,7 +789,8 @@
                     setTimeout(() => {
                         html2pdf().set(opt).from(printContainer).save().then(() => {
                             noPrintUI.style.display = 'block';
-                            printContainer.style.display = 'none';
+                            printContainer.removeAttribute('style');
+                            printContainer.removeAttribute('dir');
                             printContainer.innerHTML = '';
                             document.getElementById('loader').classList.replace('bg-white', 'bg-white/90');
                             document.getElementById('printWorker').value = ""; 
@@ -797,7 +800,8 @@
                         }).catch(err => { 
                             console.error(err); 
                             noPrintUI.style.display = 'block';
-                            printContainer.style.display = 'none';
+                            printContainer.removeAttribute('style');
+                            printContainer.removeAttribute('dir');
                             document.getElementById('loader').classList.replace('bg-white', 'bg-white/90');
                             hideLoader(); showToast("שגיאה ביצירת PDF", "error"); 
                         });
