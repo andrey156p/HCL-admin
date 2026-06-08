@@ -231,6 +231,7 @@
                     <th>פריט נבדק</th>
                     <th>הערות</th>
                     <th>סטטוס</th>
+                    <th>עובד מבצע</th>
                 </tr>
             </thead>
             <tbody id="managerTableBody"></tbody>
@@ -580,7 +581,7 @@
                     </div>
                 </div>`;
 
-                tbody.innerHTML += `<tr><td>${task.dateStr}</td><td>${task.inspector || "אנדרי"}</td><td>${task.dept}</td><td>${task.room}</td><td>${task.defect}</td><td>${task.comment || ""}</td><td>${isPrinted ? "בעבודה" : "פתוח"}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${task.dateStr}</td><td>${task.inspector || "אנדרי"}</td><td>${task.dept}</td><td>${task.room}</td><td>${task.defect}</td><td>${task.comment || ""}</td><td>${isPrinted ? "בעבודה" : "פתוח"}</td><td>${task.printedWorker || ""}</td></tr>`;
             });
             updateSelectAllBtn();
         }
@@ -724,7 +725,7 @@
             checkboxes.forEach(cb => {
                 const realIdx = parseInt(cb.dataset.index); const task = allTasks[realIdx];
                 if (task) {
-                    if (task.status !== "בעבודה") { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }); }
+                    if (task.status !== "בעבודה" || chosenWorker) { tasksToUpdateOnServer.push({ sheet: task.sheet, room: task.room, defect: task.defect, comment: task.comment || "", date: task.dateStr }); }
                     const actT = task.actionType == 1 ? "החלפה" : "תיקון"; const img = fixImageUrl(task.photo); const dDate = task.dateStr.split(" ")[0];
                     let printTask = {...task, actT, img, dDate, id: realIdx};
                     if (targetLang !== 'he') { translationPayload.push({ id: realIdx, defect: task.defect, comment: task.comment, actT: actT }); }
