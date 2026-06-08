@@ -162,6 +162,7 @@
                         <button onclick="openWorkersModal()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-users ml-2"></i>ניהול עובדים</button>
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 w-36 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow flex items-center justify-center"><i class="fas fa-check-square ml-2"></i><span>בחר הכל</span></button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
+                        <button onclick="revertSelectedTasks()" class="bg-orange-100 text-orange-700 px-4 py-2 rounded-xl font-bold hover:bg-orange-200 shadow border border-orange-300"><i class="fas fa-undo ml-2"></i>החזר לפתוח</button>
                         
                         <div class="flex gap-2 items-center bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-sm flex-wrap justify-center">
                             <select id="printWorker" class="bg-white text-orange-900 border border-gray-200 py-1.5 px-3 font-bold rounded-lg outline-none text-sm max-w-[140px]">
@@ -610,6 +611,29 @@
                 }
                 if(fpInstance) fpInstance.redraw(); hideLoader(); renderTasks(); showToast("המשימות נסגרו", "success");
             }, "fa-check-double");
+        }
+
+        function revertSelectedTasks() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked:not(:disabled)');
+            if(checkboxes.length === 0) { showToast("בחר לפחות משימה אחת!", "warning"); return; }
+            
+            const tasksToRevert = []; 
+            checkboxes.forEach(cb => { 
+                const idx = parseInt(cb.dataset.index); 
+                if (allTasks[idx] && allTasks[idx].status === "בעבודה") {
+                    tasksToRevert.push({ sheet: allTasks[idx].sheet, room: allTasks[idx].room, defect: allTasks[idx].defect, comment: allTasks[idx].comment || "", date: allTasks[idx].dateStr }); 
+                }
+            });
+
+            if(tasksToRevert.length === 0) { showToast("אין משימות במצב 'בעבודה' בין הנבחרים", "warning"); return; }
+
+            showCustomConfirm("החזרה לפתוח", `להחזיר ${tasksToRevert.length} משימות נבחרות לסטטוס 'פתוח'?`, async () => {
+                showLoader("מעדכן משימות...");
+                try {
+                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "UNMARK_PRINTED", tasks: tasksToRevert }) });
+                    await loadTasks(); showToast("המשימות הוחזרו לפתוח", "success");
+                } catch(e) { console.error(e); hideLoader(); }
+            }, "fa-undo");
         }
 
         function printManagerReport() { 
