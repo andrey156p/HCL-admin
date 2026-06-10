@@ -939,7 +939,6 @@
 
                 tbody.innerHTML += `<tr><td>${task.dateStr}</td><td>${task.inspector || "אנדרי"}</td><td>${task.dept}</td><td>${task.room}</td><td>${task.defect}</td><td>${task.comment || ""}</td><td>${isPrinted ? "בעבודה" : "פתוח"}</td><td>${task.printedWorker || ""}</td></tr>`;
             });
-            }
             
             if(viewMode === 'table') {
                 tableHTML += `</tbody></table></div>`;
