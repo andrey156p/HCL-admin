@@ -389,6 +389,7 @@
                 workersPool = data.workers || [];
                 categoriesConfig = data.categories || {};
                 teamsList = data.teams || ["חשמל","מיזוג_אוויר","בינוי_ודלתות","מיטות","בטיחות","ניקיון","ליקויים"];
+                if(!teamsList.includes("ליקויים")) teamsList.push("ליקויים");
                 systemTeams = data.systemTeams || {};
                 updateWorkersSelectUI();
                 renderDynamicTabs();
@@ -446,7 +447,8 @@
                 let options = `<option value="">-- ללא צוות -- (שיוך אוטומטי)</option>`;
                 teamsList.forEach(t => {
                    let sel = (systemTeams[sys] === t) ? "selected" : "";
-                   options += `<option value="${t}" ${sel}>${t}</option>`;
+                   let label = (t === "ליקויים" || t === "כללי") ? "כללי" : t;
+                   options += `<option value="${t}" ${sel}>${label}</option>`;
                 });
                 
                 list.innerHTML += `
@@ -535,10 +537,12 @@
             const list = document.getElementById('teamsListZone');
             list.innerHTML = '';
             teamsList.forEach((t, idx) => {
-                const canDelete = t !== 'כללי' && t !== 'ליקויים';
+                const isGeneral = (t === 'כללי' || t === 'ליקויים');
+                const canDelete = !isGeneral;
+                const label = isGeneral ? 'כללי (ליקויים)' : t;
                 list.innerHTML += `
                 <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 mb-2">
-                    <span class="font-bold text-gray-700">${t}</span>
+                    <span class="font-bold text-gray-700">${label}</span>
                     ${canDelete ? `<button onclick="removeTeam(${idx})" class="text-red-500 hover:text-red-700 bg-red-50 w-8 h-8 rounded-lg"><i class="fas fa-trash-alt"></i></button>` : ''}
                 </div>`;
             });
@@ -583,7 +587,7 @@
                 const btn = document.createElement('button');
                 btn.id = 'tab-' + c;
                 btn.className = `tab-btn flex-1 min-w-[120px] py-4 px-4 font-bold text-gray-500 whitespace-nowrap`;
-                btn.innerText = c;
+                btn.innerText = (c === 'ליקויים' || c === 'כללי') ? 'כללי' : c;
                 btn.onclick = () => switchTab(c);
                 container.appendChild(btn);
             });
