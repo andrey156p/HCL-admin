@@ -361,9 +361,8 @@
         document.addEventListener("DOMContentLoaded", () => {
             fpInstance = flatpickr("#filterDate", {
                 dateFormat: "Y-m-d",
-                defaultDate: new Date(),
                 allowInput: false,
-                disableMobile: true, // ИСПРАВЛЕНИЕ: Точки календаря теперь работают на телефонах
+                disableMobile: true,
                 onChange: function() { renderTasks(); },
                 onDayCreate: function(dObj, dStr, fp, dayElem) {
                     if (!allTasks || allTasks.length === 0) return;
@@ -371,6 +370,7 @@
                     const offsetObj = new Date(cellDate.getTime() - cellDate.getTimezoneOffset() * 60000);
                     const dateKey = offsetObj.toISOString().split('T')[0];
                     const hasTasksOnDay = allTasks.some(t => {
+                        if (!t.dateStr || !t.dateStr.includes("/")) return false;
                         const p = t.dateStr.split(" ")[0].split("/");
                         const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
                         return taskIso === dateKey;
@@ -772,26 +772,19 @@
             const fDept = document.getElementById('filterDept').value; const fDate = document.getElementById('filterDate').value;
             let now = new Date();
 
-            let tasksForDeptFilter = allTasks; 
             
-              if(fDate) {
-                  filtered = filtered.filter(t => {
-                      const p = t.dateStr.split(" ")[0].split("/");
-                      const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-                      return taskIso === fDate;
-                  });
-              }
-              
-              if(searchQuery) {
-                  filtered = filtered.filter(t => 
-                      t.room.toLowerCase().includes(searchQuery) || 
-                      t.defect.toLowerCase().includes(searchQuery) || 
-                      (t.comment && t.comment.toLowerCase().includes(searchQuery)) ||
-                      t.dept.toLowerCase().includes(searchQuery) ||
-                      (t.printedWorker && t.printedWorker.toLowerCase().includes(searchQuery))
-                  );
-              }
-
+            let tasksForDeptFilter = allTasks; 
+            if(fDate) {
+                tasksForDeptFilter = tasksForDeptFilter.filter(t => {
+                    if (!t.dateStr || !t.dateStr.includes("/")) return false;
+                    const p = t.dateStr.split(" ")[0].split("/");
+                    if (p.length < 3) return false;
+                    const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                    return taskIso === fDate;
+                });
+            }
+ 
+            
             const activeDepts = [...new Set(tasksForDeptFilter.map(t => t.dept))].filter(Boolean);
             
             const sel = document.getElementById('filterDept'); const previousValue = sel.value;
@@ -801,21 +794,36 @@
 
             let filtered = allTasks.filter(t => t.sheet === currentTab);
             if(fDept !== "ALL") filtered = filtered.filter(t => t.dept === fDept);
-            if(fDate) {
-                filtered = filtered.filter(t => {
-                    const p = t.dateStr.split(" ")[0].split("/");
-                    const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-                    return taskIso === fDate;
-                });
-            }
+                          if(fDate) {
+                  filtered = filtered.filter(t => {
+                      if (!t.dateStr || !t.dateStr.includes("/")) return false;
+                      const p = t.dateStr.split(" ")[0].split("/");
+                      if (p.length < 3) return false;
+                      const taskIso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                      return taskIso === fDate;
+                  });
+              }
+              
+              if(searchQuery) {
+                  filtered = filtered.filter(t => 
+                      (t.room && t.room.toLowerCase().includes(searchQuery)) || 
+                      (t.defect && t.defect.toLowerCase().includes(searchQuery)) || 
+                      (t.comment && t.comment.toLowerCase().includes(searchQuery)) ||
+                      (t.dept && t.dept.toLowerCase().includes(searchQuery)) ||
+                      (t.printedWorker && t.printedWorker.toLowerCase().includes(searchQuery))
+                  );
+              }
             
             let unprintedList = []; let overdueList = []; let unprintedTaskCount = 0; let overdueTaskCount = 0;
 
             allTasks.forEach(t => {
-                const isPrinted = (t.status === "בעבודה"); 
-                const p = t.dateStr.split(" ")[0].split("/"); const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
-                const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
-                const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60); const dateOnly = t.dateStr.split(" ")[0];
+                  const isPrinted = (t.status === "בעבודה" || t.status === "מודפס");
+                  if (!t.dateStr || !t.dateStr.includes("/")) return;
+                  const p = t.dateStr.split(" ")[0].split("/"); 
+                  if (p.length < 3) return;
+                  const tm = t.dateStr.split(" ")[1] ? t.dateStr.split(" ")[1].split(":") : ["00","00"];
+                  const taskDate = new Date(p[2], p[1]-1, p[0], tm[0], tm[1]);
+                  const diffHours = (now.getTime() - taskDate.getTime()) / (1000 * 60 * 60); const dateOnly = t.dateStr.split(" ")[0];
 
                 if (!isPrinted) { unprintedTaskCount++; let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`; if(!unprintedList.includes(itemStr)) unprintedList.push(itemStr); }
                 if (diffHours >= 48) { overdueTaskCount++; let itemStr = `מחלקה: ${t.dept} | צוות: ${t.sheet} | תאריך: ${dateOnly}`; if(!overdueList.includes(itemStr)) overdueList.push(itemStr); }
