@@ -714,12 +714,6 @@
                 }
             }
             lastCheckedIndex = realIdx;
-            }
-            
-            if(viewMode === 'table') {
-                tableHTML += `</tbody></table></div>`;
-                screen.innerHTML = tableHTML;
-            }
             updateSelectAllBtn();
         }
 
@@ -744,12 +738,7 @@
             const checkboxes = document.querySelectorAll('.task-checkbox:not(:disabled)');
             if (checkboxes.length === 0) return;
             const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
-            checkboxes.forEach(cb => cb.checked = anyUnchecked); }
-            
-            if(viewMode === 'table') {
-                tableHTML += `</tbody></table></div>`;
-                screen.innerHTML = tableHTML;
-            }
+            checkboxes.forEach(cb => cb.checked = anyUnchecked);
             updateSelectAllBtn();
         }
 
