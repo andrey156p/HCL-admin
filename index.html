@@ -114,6 +114,38 @@
         </div>
     </div>
 
+    <!-- Config Modal -->
+    <div id="configModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-black text-gray-800"><i class="fas fa-cogs text-indigo-600 ml-2"></i>ניהול קבוצות ומערכות</h3>
+                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="flex gap-4 mb-4 flex-col md:flex-row flex-grow min-h-0">
+                <div class="flex-1 border rounded-xl overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-2 font-bold text-center border-b">קבוצות (Teams)</div>
+                    <div class="flex p-2 gap-2 border-b">
+                        <input type="text" id="newTeamName" placeholder="שם קבוצה..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
+                        <button onclick="addTeamConfig()" class="bg-indigo-600 text-white px-3 py-1 rounded-lg"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="configTeamsList" class="flex-grow overflow-y-auto p-2 space-y-2 min-h-[150px]"></div>
+                </div>
+                
+                <div class="flex-1 border rounded-xl overflow-hidden flex flex-col">
+                    <div id="configSystemsHeader" class="bg-gray-100 p-2 font-bold text-center border-b">מערכות</div>
+                    <div class="flex p-2 gap-2 border-b">
+                        <input type="text" id="newSystemName" placeholder="שם מערכת..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
+                        <button onclick="addSystemConfig()" class="bg-indigo-600 text-white px-3 py-1 rounded-lg"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="configSystemsList" class="flex-grow overflow-y-auto p-2 space-y-2 min-h-[150px]"></div>
+                </div>
+            </div>
+            
+            <button onclick="saveConfigToServer()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-save ml-2"></i>שמור הגדרות לשרת</button>
+        </div>
+    </div>
+
     <button id="backToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-500 transition-all z-30 opacity-0 invisible">
         <i class="fas fa-arrow-up text-lg"></i>
     </button>
@@ -159,6 +191,7 @@
                     <h1 class="text-3xl font-black text-gray-800">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
                     
                     <div class="flex gap-2 flex-wrap justify-center items-center">
+                        <button onclick="openConfigModal()" class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold hover:bg-blue-100 shadow"><i class="fas fa-cogs ml-2"></i>ניהול קבוצות</button>
                         <button onclick="openWorkersModal()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-users ml-2"></i>ניהול עובדים</button>
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 w-36 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow flex items-center justify-center"><i class="fas fa-check-square ml-2"></i><span>בחר הכל</span></button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
@@ -207,14 +240,8 @@
                 </div>
             </div>
 
-            <div class="flex bg-white rounded-2xl shadow-sm mb-6 overflow-hidden flex-wrap md:flex-nowrap border border-gray-200">
-                <button onclick="switchTab('חשמל')" id="tab-חשמל" class="tab-btn active flex-1 py-4 px-2 font-bold text-gray-500">חשמל</button>
-                <button onclick="switchTab('מיזוג_אוויר')" id="tab-מיזוג_אוויר" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיזוג</button>
-                <button onclick="switchTab('בינוי_ודלתות')" id="tab-בינוי_ודלתות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בינוי</button>
-                <button onclick="switchTab('מיטות')" id="tab-מיטות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">מיטות</button>
-                <button onclick="switchTab('בטיחות')" id="tab-בטיחות" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">בטיחות</button>
-                <button onclick="switchTab('ניקיון')" id="tab-ניקיון" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">ניקיון</button>
-                <button onclick="switchTab('ליקויים')" id="tab-ליקויים" class="tab-btn flex-1 py-4 px-2 font-bold text-gray-500">כללי</button>
+            <div id="dynamicTabsContainer" class="flex bg-white rounded-2xl shadow-sm mb-6 overflow-x-auto overflow-y-hidden border border-gray-200">
+                <!-- Dynamic Tabs injected here -->
             </div>
 
             <div id="screenTasksContainer" class="space-y-4"></div>
@@ -243,6 +270,8 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxMN6s8ektwhHxuE_8xDz1ZaeqYyXaLyniwi_xFpbzVEjFEo_AUd6PybJk6nGKxmy7E/exec";
         let allTasks = [];
         let workersPool = []; 
+        let categoriesConfig = {};
+        let activeConfigTeam = null;
         let currentTab = "חשמל";
         let fpInstance = null;
 
@@ -339,7 +368,9 @@
                 const res = await fetch(`${API_URL}?action=getSettings`);
                 const data = await res.json();
                 workersPool = data.workers || [];
+                categoriesConfig = data.categories || {};
                 updateWorkersSelectUI();
+                renderDynamicTabs();
             } catch(e) { console.error("Ошибка загрузки настроек:", e); }
         }
 
@@ -351,6 +382,125 @@
 
         function openWorkersModal() { document.getElementById('workersModal').classList.remove('hidden'); renderWorkersListUI(); }
         function closeWorkersModal() { document.getElementById('workersModal').classList.add('hidden'); }
+
+        // Config Modal Logic
+        function openConfigModal() {
+            document.getElementById('configModal').classList.remove('hidden');
+            renderConfigTeams();
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.add('hidden');
+        }
+
+        function renderConfigTeams() {
+            const list = document.getElementById('configTeamsList');
+            list.innerHTML = '';
+            const cats = Object.keys(categoriesConfig);
+            cats.forEach(team => {
+                const isSelected = activeConfigTeam === team;
+                const canDelete = team !== 'כללי' && team !== 'Общее' && team !== 'ליקויים';
+                list.innerHTML += `
+                <div class="flex justify-between items-center p-2 rounded-lg cursor-pointer border ${isSelected ? 'bg-indigo-100 border-indigo-300' : 'bg-white border-gray-200 hover:bg-gray-50'}" onclick="selectConfigTeam('${team}')">
+                    <span class="font-bold text-gray-700">${team}</span>
+                    ${canDelete ? `<button onclick="removeTeamConfig('${team}', event)" class="text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button>` : ''}
+                </div>`;
+            });
+            if (!activeConfigTeam && cats.length > 0) selectConfigTeam(cats[0]);
+            else renderConfigSystems();
+        }
+
+        function selectConfigTeam(team) {
+            activeConfigTeam = team;
+            document.getElementById('configSystemsHeader').innerText = `מערכות ב: ${team}`;
+            renderConfigTeams(); // re-render to update selection style
+            renderConfigSystems();
+        }
+
+        function renderConfigSystems() {
+            const list = document.getElementById('configSystemsList');
+            list.innerHTML = '';
+            if (!activeConfigTeam || !categoriesConfig[activeConfigTeam]) return;
+            categoriesConfig[activeConfigTeam].forEach((sys, idx) => {
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-200 mb-1">
+                    <span class="font-bold text-gray-600 text-sm">${sys}</span>
+                    <button onclick="removeSystemConfig('${sys}')" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                </div>`;
+            });
+        }
+
+        function addTeamConfig() {
+            const inp = document.getElementById('newTeamName');
+            const val = inp.value.trim();
+            if (!val || categoriesConfig[val]) return;
+            categoriesConfig[val] = [];
+            inp.value = '';
+            selectConfigTeam(val);
+        }
+
+        function removeTeamConfig(team, event) {
+            if (event) event.stopPropagation();
+            showCustomConfirm('מחיקת קבוצה', `האם אתה בטוח שברצונך למחוק את הקבוצה "${team}"?`, () => {
+                delete categoriesConfig[team];
+                activeConfigTeam = null;
+                renderConfigTeams();
+            });
+        }
+
+        function addSystemConfig() {
+            const inp = document.getElementById('newSystemName');
+            const val = inp.value.trim();
+            if (!val || !activeConfigTeam) return;
+            if (!categoriesConfig[activeConfigTeam].includes(val)) {
+                categoriesConfig[activeConfigTeam].push(val);
+            }
+            inp.value = '';
+            renderConfigSystems();
+        }
+
+        function removeSystemConfig(sys) {
+            if (!activeConfigTeam) return;
+            categoriesConfig[activeConfigTeam] = categoriesConfig[activeConfigTeam].filter(s => s !== sys);
+            renderConfigSystems();
+        }
+
+        async function saveConfigToServer() {
+            showLoader("שומר הגדרות...");
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SAVE_CATEGORIES", categories: categoriesConfig }) });
+                const out = await res.json();
+                if(out.status === "success") { 
+                    closeConfigModal(); 
+                    showToast("הגדרות נשמרו בהצלחה", "success"); 
+                    renderDynamicTabs();
+                } else {
+                    showToast("שגיאה בשמירת הגדרות", "error");
+                }
+            } catch(e) { console.error(e); showToast("שגיאת תקשורת", "error"); } 
+            hideLoader();
+        }
+
+        function renderDynamicTabs() {
+            const container = document.getElementById('dynamicTabsContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            const cats = Object.keys(categoriesConfig);
+            if(cats.length === 0) cats.push("ליקויים"); // fallback
+            
+            cats.forEach(c => {
+                const btn = document.createElement('button');
+                btn.id = 'tab-' + c;
+                btn.className = `tab-btn flex-1 min-w-[120px] py-4 px-4 font-bold text-gray-500 whitespace-nowrap`;
+                btn.innerText = c;
+                btn.onclick = () => switchTab(c);
+                container.appendChild(btn);
+            });
+            
+            // Ensure currentTab is valid, else pick the first
+            if(!cats.includes(currentTab) && cats.length > 0) currentTab = cats[0];
+            switchTab(currentTab);
+        }
 
         function renderWorkersListUI() {
             const zone = document.getElementById('workersListZone');
