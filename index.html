@@ -116,26 +116,26 @@
 
     <!-- Config Modal -->
     <div id="configModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-xl font-black text-gray-800"><i class="fas fa-cogs text-indigo-600 ml-2"></i>ניהול קבוצות ומערכות</h3>
+                <h3 class="text-xl font-black text-gray-800"><i class="fas fa-cogs text-indigo-600 ml-2"></i>ניהול מערכות נבדקות</h3>
                 <button onclick="closeConfigModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="flex gap-4 mb-4 flex-col md:flex-row flex-grow min-h-0">
-                <div class="flex-1 border rounded-xl overflow-hidden flex flex-col">
-                    <div class="bg-gray-100 p-2 font-bold text-center border-b">קבוצות (Teams)</div>
+                <div class="flex-1 border rounded-xl overflow-hidden flex flex-col w-full md:w-1/3">
+                    <div class="bg-gray-100 p-2 font-bold text-center border-b">אזורי בדיקה (כמו אמבטיה, חדר)</div>
                     <div class="flex p-2 gap-2 border-b">
-                        <input type="text" id="newTeamName" placeholder="שם קבוצה..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
+                        <input type="text" id="newTeamName" placeholder="הוסף אזור..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
                         <button onclick="addTeamConfig()" class="bg-indigo-600 text-white px-3 py-1 rounded-lg"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="configTeamsList" class="flex-grow overflow-y-auto p-2 space-y-2 min-h-[150px]"></div>
                 </div>
                 
-                <div class="flex-1 border rounded-xl overflow-hidden flex flex-col">
-                    <div id="configSystemsHeader" class="bg-gray-100 p-2 font-bold text-center border-b">מערכות</div>
+                <div class="flex-2 border rounded-xl overflow-hidden flex flex-col w-full md:w-2/3">
+                    <div id="configSystemsHeader" class="bg-gray-100 p-2 font-bold text-center border-b">מערכות באזור</div>
                     <div class="flex p-2 gap-2 border-b">
-                        <input type="text" id="newSystemName" placeholder="שם מערכת..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
+                        <input type="text" id="newSystemName" placeholder="הוסף מערכת (כמו דוש, שקע)..." class="flex-grow p-2 bg-gray-50 border rounded-lg font-bold outline-none text-sm">
                         <button onclick="addSystemConfig()" class="bg-indigo-600 text-white px-3 py-1 rounded-lg"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="configSystemsList" class="flex-grow overflow-y-auto p-2 space-y-2 min-h-[150px]"></div>
@@ -143,6 +143,22 @@
             </div>
             
             <button onclick="saveConfigToServer()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-save ml-2"></i>שמור הגדרות לשרת</button>
+        </div>
+    </div>
+
+    <!-- Teams Modal -->
+    <div id="teamsModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-black text-gray-800"><i class="fas fa-users-cog text-indigo-600 ml-2"></i>ניהול צוותים</h3>
+                <button onclick="closeTeamsModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="newTeamInput" placeholder="שם צוות (כגון חשמל, בינוי)..." class="flex-grow p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                <button onclick="addTeam()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-indigo-500 transition-all"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="teamsListZone" class="flex-grow overflow-y-auto mb-4 min-h-[200px] border rounded-xl p-2 bg-gray-50"></div>
+            <button onclick="saveTeamsToServer()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-500 shadow"><i class="fas fa-save ml-2"></i>שמור צוותים לשרת</button>
         </div>
     </div>
 
@@ -191,7 +207,8 @@
                     <h1 class="text-3xl font-black text-gray-800">לוח בקרה <span class="text-indigo-600">HCL</span></h1>
                     
                     <div class="flex gap-2 flex-wrap justify-center items-center">
-                        <button onclick="openConfigModal()" class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold hover:bg-blue-100 shadow"><i class="fas fa-cogs ml-2"></i>ניהול קבוצות</button>
+                        <button onclick="openTeamsModal()" class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold hover:bg-blue-100 shadow border border-blue-200"><i class="fas fa-users-cog ml-2"></i>ניהול צוותים</button>
+                        <button onclick="openConfigModal()" class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold hover:bg-blue-100 shadow"><i class="fas fa-cogs ml-2"></i>ניהול מערכות נבדקות</button>
                         <button onclick="openWorkersModal()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow"><i class="fas fa-users ml-2"></i>ניהול עובדים</button>
                         <button onclick="toggleSelectAll()" id="selectAllBtn" class="bg-indigo-50 text-indigo-700 w-36 py-2 rounded-xl font-bold hover:bg-indigo-100 shadow flex items-center justify-center"><i class="fas fa-check-square ml-2"></i><span>בחר הכל</span></button>
                         <button onclick="closeSelectedTasks()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-500 shadow"><i class="fas fa-check-double ml-2"></i>סגור נבחרים</button>
@@ -271,6 +288,8 @@
         let allTasks = [];
         let workersPool = []; 
         let categoriesConfig = {};
+        let systemTeams = {};
+        let teamsList = [];
         let activeConfigTeam = null;
         let currentTab = "חשמל";
         let fpInstance = null;
@@ -369,6 +388,8 @@
                 const data = await res.json();
                 workersPool = data.workers || [];
                 categoriesConfig = data.categories || {};
+                teamsList = data.teams || ["חשמל","מיזוג_אוויר","בינוי_ודלתות","מיטות","בטיחות","ניקיון","ליקויים"];
+                systemTeams = data.systemTeams || {};
                 updateWorkersSelectUI();
                 renderDynamicTabs();
             } catch(e) { console.error("Ошибка загрузки настроек:", e); }
@@ -422,12 +443,31 @@
             list.innerHTML = '';
             if (!activeConfigTeam || !categoriesConfig[activeConfigTeam]) return;
             categoriesConfig[activeConfigTeam].forEach((sys, idx) => {
+                let options = `<option value="">-- ללא צוות -- (שיוך אוטומטי)</option>`;
+                teamsList.forEach(t => {
+                   let sel = (systemTeams[sys] === t) ? "selected" : "";
+                   options += `<option value="${t}" ${sel}>${t}</option>`;
+                });
+                
                 list.innerHTML += `
-                <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-200 mb-1">
-                    <span class="font-bold text-gray-600 text-sm">${sys}</span>
-                    <button onclick="removeSystemConfig('${sys}')" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                <div class="flex flex-col bg-white p-2 rounded-lg border border-gray-200 mb-2 gap-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-800">${sys}</span>
+                        <button onclick="removeSystemConfig('${sys}')" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">צוות מטפל:</span>
+                        <select onchange="updateSystemTeam('${sys}', this.value)" class="flex-grow text-sm p-1 border rounded bg-gray-50 outline-none">
+                            ${options}
+                        </select>
+                    </div>
                 </div>`;
             });
+        }
+
+        function updateSystemTeam(sys, team) {
+            if(team) systemTeams[sys] = team;
+            else delete systemTeams[sys];
         }
 
         function addTeamConfig() {
@@ -441,7 +481,7 @@
 
         function removeTeamConfig(team, event) {
             if (event) event.stopPropagation();
-            showCustomConfirm('מחיקת קבוצה', `האם אתה בטוח שברצונך למחוק את הקבוצה "${team}"?`, () => {
+            showCustomConfirm('מחיקת אזור', `האם אתה בטוח שברצונך למחוק את האזור "${team}"? כל המערכות בו יימחקו מההגדרות.`, () => {
                 delete categoriesConfig[team];
                 activeConfigTeam = null;
                 renderConfigTeams();
@@ -462,18 +502,18 @@
         function removeSystemConfig(sys) {
             if (!activeConfigTeam) return;
             categoriesConfig[activeConfigTeam] = categoriesConfig[activeConfigTeam].filter(s => s !== sys);
+            delete systemTeams[sys];
             renderConfigSystems();
         }
 
         async function saveConfigToServer() {
             showLoader("שומר הגדרות...");
             try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SAVE_CATEGORIES", categories: categoriesConfig }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SAVE_CATEGORIES", categories: categoriesConfig, systemTeams: systemTeams }) });
                 const out = await res.json();
                 if(out.status === "success") { 
                     closeConfigModal(); 
                     showToast("הגדרות נשמרו בהצלחה", "success"); 
-                    renderDynamicTabs();
                 } else {
                     showToast("שגיאה בשמירת הגדרות", "error");
                 }
@@ -481,14 +521,65 @@
             hideLoader();
         }
 
+        // Teams UI Logic
+        function openTeamsModal() {
+            document.getElementById('teamsModal').classList.remove('hidden');
+            renderTeamsListUI();
+        }
+
+        function closeTeamsModal() {
+            document.getElementById('teamsModal').classList.add('hidden');
+        }
+
+        function renderTeamsListUI() {
+            const list = document.getElementById('teamsListZone');
+            list.innerHTML = '';
+            teamsList.forEach((t, idx) => {
+                const canDelete = t !== 'כללי' && t !== 'ליקויים';
+                list.innerHTML += `
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 mb-2">
+                    <span class="font-bold text-gray-700">${t}</span>
+                    ${canDelete ? `<button onclick="removeTeam(${idx})" class="text-red-500 hover:text-red-700 bg-red-50 w-8 h-8 rounded-lg"><i class="fas fa-trash-alt"></i></button>` : ''}
+                </div>`;
+            });
+        }
+
+        function addTeam() {
+            const val = document.getElementById('newTeamInput').value.trim();
+            if(val && !teamsList.includes(val)) { 
+                teamsList.push(val); 
+                renderTeamsListUI(); 
+                document.getElementById('newTeamInput').value = ''; 
+            }
+        }
+
+        function removeTeam(idx) {
+            teamsList.splice(idx, 1);
+            renderTeamsListUI();
+        }
+
+        async function saveTeamsToServer() {
+            showLoader("שומר צוותים...");
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "SAVE_TEAMS", teams: teamsList }) });
+                const out = await res.json();
+                if(out.status === "success") { 
+                    closeTeamsModal(); 
+                    showToast("צוותים נשמרו בהצלחה", "success"); 
+                    renderDynamicTabs();
+                } else {
+                    showToast("שגיאה", "error");
+                }
+            } catch(e) { console.error(e); showToast("שגיאה", "error"); } 
+            hideLoader();
+        }
+
         function renderDynamicTabs() {
             const container = document.getElementById('dynamicTabsContainer');
             if(!container) return;
             container.innerHTML = '';
-            const cats = Object.keys(categoriesConfig);
-            if(cats.length === 0) cats.push("ליקויים"); // fallback
             
-            cats.forEach(c => {
+            teamsList.forEach(c => {
                 const btn = document.createElement('button');
                 btn.id = 'tab-' + c;
                 btn.className = `tab-btn flex-1 min-w-[120px] py-4 px-4 font-bold text-gray-500 whitespace-nowrap`;
@@ -497,8 +588,7 @@
                 container.appendChild(btn);
             });
             
-            // Ensure currentTab is valid, else pick the first
-            if(!cats.includes(currentTab) && cats.length > 0) currentTab = cats[0];
+            if(!teamsList.includes(currentTab) && teamsList.length > 0) currentTab = teamsList[0];
             switchTab(currentTab);
         }
 
