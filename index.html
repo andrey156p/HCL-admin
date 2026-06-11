@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; overflow-y: scroll; }
         .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; background-color: white;}
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -36,25 +36,25 @@
         /* Полное устранение флеша картинок на экране. Контейнер скрыт по умолчанию. */
         #printTasksContainer { display: none; }
 
-        @media print {
-            @page { size: A4 portrait; margin: 8mm; }
+                @media print {
+            @page { size: A4 portrait; margin: 10mm; }
             body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
             #noPrintUI, #qrModal { display: none !important; }
-            .print-page { page-break-after: always; padding: 20px; padding-top: 35px; }
+            .print-page { page-break-after: always; padding: 0; }
             .print-page-header { font-size: 20px; font-weight: 900; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
             #printTasksContainer { display: block !important; }
         }
 
-        /* ГЛОБАЛЬНЫЕ СТИЛИ ПЕЧАТИ (Вынесены из @media print, чтобы генератор PDF их видел) */
-        .print-page { width: 100%; height: 280mm; box-sizing: border-box; display: flex; flex-direction: column; background: white;}
+        /* סגנונות כרטיסי הדפסה (מחוץ ל @media print, כדי שיוצגו ב-PDF גם ככה) */
+        .print-page { width: 190mm; height: 275mm; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; background: white; overflow: hidden; }
         .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center; color: black;}
         .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
-        .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: space-between; flex-grow: 1; height: calc(100% - 50px); }
-        .print-card { width: 48.8%; height: 49%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; background: white; color: black;}
+        .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: flex-start; gap: 2%; flex-grow: 1; height: calc(100% - 50px); }
+        .print-card { width: 49%; height: 48%; margin-bottom: 2%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; background: white; color: black;}
         .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; color: black;}
         .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
-        .print-photo { width: 68%; height: 100%; max-height: 380px; object-fit: cover; border: 2px solid #cbd5e1; border-radius: 8px; }
-        .print-info { width: 32%; display: flex; flex-direction: column; color: black;}
+        .print-photo { width: 55%; height: 100%; max-height: 100%; object-fit: contain; border: 2px solid #cbd5e1; border-radius: 8px; }
+        .print-info { width: 45%; display: flex; flex-direction: column; color: black; overflow: hidden; }
         .defect-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
         .defect-comment { font-size: 14px; color: #374151; line-height: 1.2; }
         .signature-box { border-top: 2px dashed #000; margin-top: 8px; padding-top: 6px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: black;}
