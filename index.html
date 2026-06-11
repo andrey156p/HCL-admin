@@ -37,21 +37,20 @@
         #printTasksContainer { display: none; }
 
                 @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; }
+            @page { size: A4 portrait; margin: 0; } /* Zero margin to prevent scaling bugs */
+            body { background: white !important; margin: 0; padding: 0 !important; -webkit-print-color-adjust: exact; width: 210mm; }
             #noPrintUI, #qrModal { display: none !important; }
-            .print-page { page-break-after: always; padding: 0; }
-            .print-page-header { font-size: 20px; font-weight: 900; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .print-page { page-break-after: always; padding: 10mm; width: 210mm; height: 296mm; border: none; }
             #printTasksContainer { display: block !important; }
         }
 
         /* סגנונות כרטיסי הדפסה (מחוץ ל @media print, כדי שיוצגו ב-PDF גם ככה) */
-        .print-page { width: 190mm; height: 275mm; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; background: white; overflow: hidden; }
-        .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center; color: black;}
-        .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px;}
-        .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: flex-start; gap: 2%; flex-grow: 1; height: calc(100% - 50px); }
-        .print-card { width: 49%; height: 48%; margin-bottom: 2%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; background: white; color: black;}
-        .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; color: black;}
+        .print-page { width: 100%; max-width: 210mm; height: 296mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; display: flex; flex-direction: column; background: white; overflow: hidden; }
+        .print-page-header { font-size: 19px; font-weight: bold; text-align: center; border-bottom: 3px solid #000; padding-bottom: 5px; margin-bottom: 8px; height: 40px; display: flex; flex-direction: column; justify-content: center; color: black; }
+        .print-page-header-sub { font-size: 13px; font-weight: normal; color: #555; margin-top: 2px; }
+        .print-cards-grid { display: flex; flex-wrap: wrap; justify-content: space-between; align-content: flex-start; flex-grow: 1; height: calc(100% - 50px); }
+        .print-card { width: 49%; height: 48%; margin-bottom: 2%; border: 2px solid #000; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; page-break-inside: avoid; overflow: hidden; background: white; color: black; }
+        .print-card-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 4px; margin-bottom: 8px; color: black; }
         .print-card-body { display: flex; gap: 10px; flex-grow: 1; align-items: stretch; overflow: hidden; }
         .print-photo { width: 55%; height: 100%; max-height: 100%; object-fit: contain; border: 2px solid #cbd5e1; border-radius: 8px; }
         .print-info { width: 45%; display: flex; flex-direction: column; color: black; overflow: hidden; }
