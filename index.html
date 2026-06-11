@@ -66,6 +66,7 @@
         #printTitleManager { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 15px; color: #000; display: none; }
         #printTitleManager.print-active { display: block; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body class="text-gray-800">
 
@@ -542,14 +543,27 @@
             const list = document.getElementById('teamsListZone');
             list.innerHTML = '';
             teamsList.forEach((t, idx) => {
-                const isGeneral = (t === 'כללי' || t === 'ליקויים');
+                const isGeneral = (t === 'כללי' || t === 'ליקויים' || t === 'בינוי_ודלתות' || t === 'מיזוג_אוויר' || t === 'חשמל');
                 const canDelete = !isGeneral;
                 const label = isGeneral ? 'כללי (ליקויים)' : t;
                 list.innerHTML += `
-                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 mb-2">
-                    <span class="font-bold text-gray-700">${label}</span>
-                    ${canDelete ? `<button onclick="removeTeam(${idx})" class="text-red-500 hover:text-red-700 bg-red-50 w-8 h-8 rounded-lg"><i class="fas fa-trash-alt"></i></button>` : ''}
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl border shadow-sm mb-2" data-id="${t}">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-grip-vertical text-gray-300 cursor-grab hover:text-gray-500 drag-handle"></i>
+                        <span class="font-bold text-gray-800">${label}</span>
+                    </div>
+                    ${canDelete ? `<button onclick="removeTeamFromList('${t}')" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg"><i class="fas fa-trash-alt"></i></button>` : ''}
                 </div>`;
+            });
+            if (window.teamSortable) window.teamSortable.destroy();
+            window.teamSortable = new Sortable(list, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function() {
+                    const newOrder = [];
+                    list.querySelectorAll('[data-id]').forEach(el => newOrder.push(el.getAttribute('data-id')));
+                    teamsList = newOrder;
+                }
             });
         }
 
@@ -921,13 +935,7 @@
                         ` : ''}
                         <select onchange="moveTask(${realIdx}, this.value)" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-xl font-bold text-sm outline-none cursor-pointer w-full">
                             <option value="" disabled selected>העבר צוות...</option>
-                            <option value="חשמל">חשמל (Электрика)</option>
-                            <option value="מיזוג_אוויר">מיזוג (Кондиционирование)</option>
-                            <option value="בינוי_ודלתות">בינוי (Строительство)</option>
-                            <option value="מיטות">מיטות (Кровати)</option>
-                            <option value="בטיחות">בטיחות (Безопасность)</option>
-                            <option value="ניקיון">ניקיון (Уборка)</option>
-                            <option value="ליקויים">כללי (Общие)</option>
+                            ${teamsList.filter(t => t !== task.sheet).map(t => `<option value="${t}">${t}</option>`).join('')}
                         </select>
                         <button id="btn-${realIdx}" onclick="closeSingleTask(${realIdx})" class="bg-green-50 text-green-600 border-2 border-green-500 px-6 py-2 rounded-xl font-bold w-full">בוצע</button>
                     </div>
