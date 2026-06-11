@@ -545,7 +545,7 @@
             teamsList.forEach((t, idx) => {
                 const isGeneral = (t === 'כללי' || t === 'ליקויים' || t === 'בינוי_ודלתות' || t === 'מיזוג_אוויר' || t === 'חשמל');
                 const canDelete = !isGeneral;
-                const label = isGeneral ? 'כללי (ליקויים)' : t;
+                const label = (t === 'ליקויים' || t === 'כללי') ? 'כללי (ליקויים)' : t;
                 list.innerHTML += `
                 <div class="flex justify-between items-center bg-white p-3 rounded-xl border shadow-sm mb-2" data-id="${t}">
                     <div class="flex items-center gap-3">
