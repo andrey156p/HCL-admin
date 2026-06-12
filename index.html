@@ -231,8 +231,8 @@
                                 <i class="fas fa-print ml-1"></i>הדפס
                             </button>
                             
-                            <button onclick="processOutput('pdf')" class="bg-red-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-red-500 transition-colors shadow-sm">
-                                <i class="fas fa-file-pdf ml-1"></i>PDF
+                            <button onclick="sendToWorkerApp()" class="bg-purple-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-purple-500 transition-colors shadow-sm">
+                                <i class="fas fa-mobile-alt ml-1"></i>WorkerApp
                             </button>
                         </div>
                         
@@ -1202,6 +1202,21 @@
                     }, 500);
                 });
             }
+        }
+        function sendToWorkerApp() {
+            const checkboxes = Array.from(document.querySelectorAll('.task-checkbox:checked'));
+            if (checkboxes.length === 0) {
+                showToast("יש לבחור לפחות משימה אחת", "warning"); 
+                return;
+            }
+            const chosenWorker = document.getElementById('printWorker').value;
+            if (!chosenWorker) {
+                showCustomConfirm("בחר עובד תחילה", "לא נבחר עובד. האם להמשיך בשליחה לכלל הצוות?", () => { 
+                    showToast("המשימות נשלחו ל-WorkerApp!", "success");
+                }, "fa-mobile-alt", "המשך", "ביטול");
+                return;
+            }
+            showToast("המשימות נשלחו ל-" + chosenWorker + " באפליקציה WorkerApp", "success");
         }
     </script>
 </body>
