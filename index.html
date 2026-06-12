@@ -1150,8 +1150,6 @@
                 printContainer.style.top = '0';
                 printContainer.dir = 'ltr';
                 printContainer.style.backgroundColor = 'white';
-                const origHtmlDir = document.documentElement.dir;
-                const origBodyDir = document.body.dir;
                 document.documentElement.dir = 'ltr';
                 document.body.dir = 'ltr';
                 
@@ -1186,8 +1184,7 @@
                             printContainer.removeAttribute('style');
                             printContainer.removeAttribute('dir');
                             printContainer.innerHTML = '';
-                            document.documentElement.dir = origHtmlDir;
-                            document.body.dir = origBodyDir;
+                            applyLanguage();
                             document.getElementById('loader').classList.replace('bg-white', 'bg-white/90');
                             document.getElementById('printWorker').value = ""; 
                             document.getElementById('printLang').value = "he"; 
@@ -1198,8 +1195,7 @@
                             noPrintUI.style.display = 'block';
                             printContainer.removeAttribute('style');
                             printContainer.removeAttribute('dir');
-                            document.documentElement.dir = origHtmlDir;
-                            document.body.dir = origBodyDir;
+                            applyLanguage();
                             document.getElementById('loader').classList.replace('bg-white', 'bg-white/90');
                             hideLoader(); showToast("שגיאה ביצירת PDF", "error"); 
                         });
